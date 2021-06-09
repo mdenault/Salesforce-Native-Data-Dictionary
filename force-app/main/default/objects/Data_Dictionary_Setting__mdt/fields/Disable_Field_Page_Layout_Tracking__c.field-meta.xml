@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Disable_Field_Page_Layout_Tracking__c</fullName>
+    <defaultValue>false</defaultValue>
+    <externalId>false</externalId>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Disables calculation of which Page Layout(s) a Field is present on. Useful if you have switched to Dynamic Forms, or just don&apos;t care for other reasons. Note this will clear the Page Layouts value from any Data Dictionary Field records that previously had it, generating Change Logs for each record unless that Page_Layouts__c field is in the Excluded list.</inlineHelpText>
+    <label>Disable Field/Page Layout Tracking</label>
+    <type>Checkbox</type>
+</CustomField>

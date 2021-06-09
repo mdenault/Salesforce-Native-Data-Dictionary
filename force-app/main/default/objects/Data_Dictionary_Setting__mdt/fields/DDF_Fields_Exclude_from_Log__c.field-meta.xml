@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DDF_Fields_Exclude_from_Log__c</fullName>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>A list of Data Dictionary Fields (one per line) that should not be tracked in the Data Dictionary Change Log. Primarily intended for fields like LastModifiedDate that changes each time the data is synced, but also useful for custom fields you add, etc. that don&apos;t need expanded tracking.</inlineHelpText>
+    <label>DDF Fields Exclude from Log</label>
+    <length>32768</length>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

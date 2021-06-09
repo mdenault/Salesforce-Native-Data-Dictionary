@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Indicated_Field_Usage__c</fullName>
+    <externalId>false</externalId>
+    <inlineHelpText>The selected &quot;Field Usage&quot; value for the field, if any. Note, these values are not calculated, and have no functional impact.</inlineHelpText>
+    <label>Indicated Field Usage</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Active</fullName>
+                <default>false</default>
+                <label>Active</label>
+            </value>
+            <value>
+                <fullName>Hidden</fullName>
+                <default>false</default>
+                <label>Hidden</label>
+            </value>
+            <value>
+                <fullName>DeprecateCandidate</fullName>
+                <default>false</default>
+                <label>DeprecateCandidate</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

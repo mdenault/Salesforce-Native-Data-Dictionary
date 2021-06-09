@@ -1,0 +1,369 @@
+public inherited sharing class ddObject {
+    
+    private Data_Dictionary_Object__c ddo;
+    private List<String> messages;
+
+    public static Map<String, Object> GetCustomObjectToolingData(String QualifiedApiName) {
+        Map<String, Object> record = new Map<String, Object>();
+        String baseURL = URL.getSalesforceBaseUrl().toExternalForm();
+
+        // TODO: check to see if custom metadata can be retrieved, too
+        String DeveloperName = QualifiedApiName.removeEndIgnoreCase('__c').removeEndIgnoreCase('__b').removeEndIgnoreCase('__e');
+
+        // TODO: put Tooling API version in custom metadata?
+        String body = ddCoreService.httpGet(baseURL +
+            '/services/data/v51.0/tooling/query?' +
+            'q=' + EncodingUtil.urlEncode('SELECT Description, CreatedDate, CreatedById FROM CustomObject WHERE DeveloperName = \'' + DeveloperName + '\'', 'UTF-8'),
+            'GET', ddCoreService.GetUserSessionId());
+   
+        Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(body);
+
+        List<Object> data = (List<Object>)responseMap.get('records');
+        if (data.size() > 0) {
+            record = (Map<String, Object>)data[0];
+        }
+        return record;
+    }
+
+    private static String formatDateTime(String utcDate){
+    	return utcDate.replace('T', ' ');
+    }
+
+    public ddObject() {
+        this.ddo = new Data_Dictionary_Object__c();
+    }
+
+    public ddObject(Id ddoId, String durableId) {
+        this.ddo = new Data_Dictionary_Object__c();
+        this.SetId(ddoId);
+        this.SetDurableId(durableId);
+    }
+
+    public Data_Dictionary_Object__c GetDDO() {
+        return this.ddo;
+    }
+
+    public Boolean SetId(Id idVal) {
+        // TODO: validate idVal
+        this.ddo.Id = idVal;
+        
+        return true;
+    }
+
+    public Boolean SetDurableId(String durableId) {
+        this.ddo.Durable_ID__c = durableId;
+
+        return true;
+    }
+
+    public String GetObjectTypeFromEntDef(EntityDefinition ed) {
+        if (ed.IsCustomSetting) {
+            return ddCoreService.OBJECT_TYPE_CUSTOMSETTING;
+        } else if (ed.QualifiedApiName.toLowerCase().right(5) ==  '__mdt') {
+            return ddCoreService.OBJECT_TYPE_CUSTOMMETADATA;
+        } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__c') {
+            return ddCoreService.OBJECT_TYPE_CUSTOMOBJECT;
+        } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__b') {
+            return ddCoreService.OBJECT_TYPE_BIGOBJECT;
+        } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__e') {
+            return ddCoreService.OBJECT_TYPE_PLATFORMEVENT;
+        } else {
+            // This also covers oddball objects such as Knowledge which ends in __kav
+            return ddCoreService.OBJECT_TYPE_STANDARDOBJECT;
+        }
+    }
+
+    public Boolean CreateStubFromEntityDef(EntityDefinition ed) {
+        this.SetDurableId(ed.DurableId);
+        this.FillFromEntityDefProvided(ed);
+        this.ddo.Status__c = ddCoreService.OBJECT_STATUS_STUB;
+        // TODO: Check to see if there is a Draft object
+
+        return true;
+    }
+
+    public Boolean Fill() {
+        this.FillFromDDO();
+        this.FillFromEntityDef();
+        if (this.ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
+            this.FillFromTooling();
+            this.FillRecordTypes();
+            this.FillRecordCounts();           
+            this.FillPageLayouts();
+            this.FillPermissions();
+        }
+
+        return true;
+    }
+
+    public Boolean FillFromDDO() {
+        // Get the Data Dictionary data
+        List<Data_Dictionary_Object__c> ddoData = [
+            SELECT Id, Name, API_Name__c, Durable_ID__c, Last_Processed__c, Prefix__c, Status__c, Type__c, Metadata_Created_by__c, Metadata_Created_Date__c
+            FROM Data_Dictionary_Object__c
+            WHERE Id = :this.ddo.Id
+        ];
+        if (ddoData.size() == 1) {
+            this.ddo = ddoData[0];
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public Boolean FillFromTooling() {
+        // Description, CreatedDate, CreatedBy -- all require tooling API
+        this.ddo.Description__c = '';
+        this.ddo.Metadata_Created_by__c = null;
+        this.ddo.Metadata_Created_Date__c = null;                
+
+        if (this.ddo.Type__c == ddCoreService.OBJECT_TYPE_CUSTOMOBJECT || this.ddo.Type__c == ddCoreService.OBJECT_TYPE_BIGOBJECT || this.ddo.Type__c == ddCoreService.OBJECT_TYPE_PLATFORMEVENT) {
+            Map<String, Object> ToolingMap = GetCustomObjectToolingData(this.ddo.API_Name__c);
+
+            if (ToolingMap.containsKey('Description')) {
+                this.ddo.Description__c = (String)ToolingMap.get('Description');
+            }
+            if (ToolingMap.containsKey('CreatedDate')) {
+                this.ddo.Metadata_Created_Date__c = Datetime.valueOf(formatDateTime((String)ToolingMap.get('CreatedDate')));
+            }
+            if (ToolingMap.containsKey('CreatedById')) {
+                this.ddo.Metadata_Created_by__c = (String)ToolingMap.get('CreatedById');
+            }
+        }
+        
+        return true;
+    }
+
+    public Boolean FillFromEntityDefProvided(EntityDefinition ed) {
+        if (ed == null) {
+            if (ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
+                ddo.Status__c = ddCoreService.OBJECT_STATUS_DELETED;
+                // TODO: clear other fields?
+            }
+        } else {
+            if (this.ddo.Status__c == ddCoreService.OBJECT_STATUS_STUB) {
+                this.ddo.First_Sync__c = Datetime.now();
+            }
+            this.ddo.Last_Processed__c = Datetime.now();
+
+            this.ddo.Status__c = ddCoreService.OBJECT_STATUS_ACTIVE;
+            this.ddo.Name = ed.Label;
+            this.ddo.API_Name__c = ed.QualifiedApiName;
+            this.ddo.Prefix__c = ed.KeyPrefix;
+            this.ddo.Durable_ID__c = ed.DurableId;
+            this.ddo.Type__c = this.GetObjectTypeFromEntDef(ed);
+
+            this.ddo.Metadata_Last_Modified_by__c = ed.LastModifiedById;
+            this.ddo.Metadata_Last_Modified_Date__c = ed.LastModifiedDate;
+
+            // Sharing
+            this.ddo.Internal_Sharing_Model__c = ed.InternalSharingModel;
+            this.ddo.External_Sharing_Model__c = ed.ExternalSharingModel;
+        }
+
+        return true;
+    }
+
+    public Boolean FillFromEntityDef() {
+        // Get any EntityDefinition data
+        List<EntityDefinition> entityData = [
+            SELECT DeploymentStatus, DeveloperName, DurableId, QualifiedApiName, IsCustomSetting, KeyPrefix, Label, LastModifiedById, LastModifiedDate, PluralLabel, ExternalSharingModel, InternalSharingModel
+            FROM EntityDefinition
+            WHERE DurableId = :this.ddo.Durable_ID__c
+        ];
+        if (entityData.size() == 1) {
+            this.FillFromEntityDefProvided(entityData[0]);
+        } else {
+            this.FillFromEntityDefProvided(null);
+        }
+
+        return true;
+    }
+
+    public Boolean FillRecordCounts() {
+        // Total Record Count
+        if (this.ddo.Type__c == ddCoreService.OBJECT_TYPE_STANDARDOBJECT || this.ddo.Type__c == ddCoreService.OBJECT_TYPE_CUSTOMOBJECT) {
+            String countQuery = 'SELECT COUNT() FROM ' + this.ddo.API_Name__c;
+            Integer recordCount = Database.countQuery(countQuery);
+            this.ddo.Record_Count__c = recordCount;
+        } else {
+            this.ddo.Record_Count__c = null;
+        }
+
+        return true;
+    }
+
+    public Boolean FillPageLayouts() {
+        // Page Layouts
+        List<String> pageLayoutList = ddCoreService.getPageLayoutNameListForObject(this.ddo.Durable_ID__c, this.ddo.API_Name__c, false);
+        this.ddo.Page_Layouts__c = String.join(pageLayoutList, '\n');
+
+        return true;
+    }
+
+    public Boolean FillRecordTypes() {
+        // Record Types
+        String recordTypeNames = '';
+        List<RecordType> rTypes = [
+            SELECT Id, Name
+            FROM RecordType
+            WHERE SObjectType = :this.ddo.API_Name__c
+        ];
+        if (rTypes.size() > 0) {
+            this.ddo.Has_Record_Types__c = true;
+            for (RecordType rt : rTypes) {
+                recordTypeNames = recordTypeNames + '\n' + rt.Name;
+            }
+        } else {
+            this.ddo.Has_Record_Types__c = false;
+        }
+        this.ddo.Record_Types__c = recordTypeNames;
+
+        return true;
+    }
+
+    public Boolean FillPermissions() {
+        Map<Id, Profile> profilesMap = ddCoreService.getProfilesMap();
+        Map<Id, PermissionSetGroup> permGroupsMap = ddCoreService.getPermGroupsMap();
+
+        List<ObjectPermissions> objPerms = [
+            SELECT Parent.Label, Parent.PermissionSetGroupId, Parent.ProfileId, Parent.IsCustom, PermissionsCreate, PermissionsRead, PermissionsEdit, PermissionsDelete, PermissionsModifyAllRecords, PermissionsViewAllRecords
+            FROM ObjectPermissions 
+            WHERE sObjectType = :this.ddo.API_Name__c
+            ORDER BY Parent.Label
+        ];
+
+        // Permissions and profiles
+        String objPermsCreate = '';
+        String objPermsRead = '';
+        String objPermsEdit = '';
+        String objPermsDelete = '';
+        String objPermsModAll = '';
+        String objPermsViewAll = '';
+
+        String objPermGroupsCreate = '';
+        String objPermGroupsRead = '';
+        String objPermGroupsEdit = '';
+        String objPermGroupsDelete = '';
+        String objPermGroupsModAll = '';
+        String objPermGroupsViewAll = '';
+
+        String objProfilesCreate = '';
+        String objProfilesRead = '';
+        String objProfilesEdit = '';
+        String objProfilesDelete = '';
+        String objProfilesModAll = '';
+        String objProfilesViewAll = '';
+
+        for (ObjectPermissions objPerm : objPerms) {
+            if (objPerm.Parent.IsCustom && objPerm.Parent.ProfileID == null && objPerm.Parent.PermissionSetGroupId == null) {
+                if (objPerm.PermissionsCreate) {
+                    objPermsCreate += objPerm.Parent.Label + '\n';
+                }
+                if (objPerm.PermissionsRead) {
+                    objPermsRead += objPerm.Parent.Label + '\n';
+                }
+                if (objPerm.PermissionsEdit) {
+                    objPermsEdit += objPerm.Parent.Label + '\n';
+                }
+                if (objPerm.PermissionsDelete) {
+                    objPermsDelete += objPerm.Parent.Label + '\n';
+                }
+                if (objPerm.PermissionsModifyAllRecords) {
+                    objPermsModAll += objPerm.Parent.Label + '\n';
+                }
+                if (objPerm.PermissionsViewAllRecords) {
+                    objPermsViewAll += objPerm.Parent.Label + '\n';
+                }
+            } else if (objPerm.Parent.PermissionSetGroupId != null) {
+                String permGroupName = permGroupsMap.get(objPerm.Parent.PermissionSetGroupId).MasterLabel;
+                if (objPerm.PermissionsCreate) {
+                    objPermGroupsCreate += permGroupName + '\n';
+                }
+                if (objPerm.PermissionsRead) {
+                    objPermGroupsRead += permGroupName + '\n';
+                }
+                if (objPerm.PermissionsEdit) {
+                    objPermGroupsEdit += permGroupName + '\n';
+                }
+                if (objPerm.PermissionsDelete) {
+                    objPermGroupsDelete += permGroupName + '\n';
+                }
+                if (objPerm.PermissionsModifyAllRecords) {
+                    objPermGroupsModAll += permGroupName + '\n';
+                }
+                if (objPerm.PermissionsViewAllRecords) {
+                    objPermGroupsViewAll += permGroupName + '\n';
+                }
+            } else if (objPerm.Parent.ProfileID != null) {
+                String profileName = profilesMap.get(objPerm.Parent.ProfileID).Name;
+                if (objPerm.PermissionsCreate) {
+                    objProfilesCreate += profileName + '\n';
+                }
+                if (objPerm.PermissionsRead) {
+                    objProfilesRead += profileName + '\n';
+                }
+                if (objPerm.PermissionsEdit) {
+                    objProfilesEdit += profileName + '\n';
+                }
+                if (objPerm.PermissionsDelete) {
+                    objProfilesDelete += profileName + '\n';
+                }
+                if (objPerm.PermissionsModifyAllRecords) {
+                    objProfilesModAll += profileName + '\n';
+                }
+                if (objPerm.PermissionsViewAllRecords) {
+                    objProfilesViewAll += profileName + '\n';
+                }
+            }
+        }
+
+        this.ddo.Permission_Sets_Create__c = objPermsCreate;
+        this.ddo.Permission_Sets_Read__c = objPermsRead;
+        this.ddo.Permission_Sets_Edit__c = objPermsEdit;
+        this.ddo.Permission_Sets_Delete__c = objPermsDelete;
+        this.ddo.Permission_Sets_View_All__c = objPermsModAll;
+        this.ddo.Permission_Sets_Modify_All__c = objPermsViewAll;
+
+        this.ddo.Permission_Set_Groups_Create__c =  objPermGroupsCreate;
+        this.ddo.Permission_Set_Groups_Read__c = objPermGroupsRead;
+        this.ddo.Permission_Set_Groups_Edit__c = objPermGroupsEdit;
+        this.ddo.Permission_Set_Groups_Delete__c = objPermGroupsDelete;
+        this.ddo.Permission_Set_Groups_View_All__c = objPermGroupsModAll;
+        this.ddo.Permission_Set_Groups_Modify_All__c = objPermGroupsViewAll;
+
+        this.ddo.Profiles_Create__c = objProfilesCreate;
+        this.ddo.Profiles_Read__c = objProfilesRead;
+        this.ddo.Profiles_Edit__c = objProfilesEdit;
+        this.ddo.Profiles_Delete__c = objProfilesDelete;
+        this.ddo.Profiles_View_All__c = objProfilesViewAll;
+        this.ddo.Profiles_Modify_All__c = objProfilesModAll;
+
+        return true;
+    }
+
+    public String Save() {
+        try {
+            upsert ddo;
+            return 'success';
+        } catch (Exception ex) {
+            return ex.getMessage();
+        }
+    }
+
+    public class ddReturnDef {
+        Boolean success;
+        String message;
+
+        public ddReturnDef(Boolean success, String message) {
+            this.success = success;
+            this.message = message;
+        }
+
+        public ddReturnDef(Boolean success) {
+            this.success = success;
+            this.message = null;
+        }
+    }
+
+}

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Usage_Count__c</fullName>
+    <externalId>false</externalId>
+    <inlineHelpText>A count of how many records have a value (are not empty/null) for this field, as of the last sync. Note that this information can&apos;t be obtained for certain types of fields--for example, a formula field can theoretically have or not have a value depending on the user viewing the record.</inlineHelpText>
+    <label>Usage Count</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Formula__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Internally this is typically referred to as &quot;IsCalculated&quot; but we used &quot;Is Formula&quot; here because that&apos;s a little less confusing-- a roll up summary is also calculated, but is not a formula.</description>
+    <externalId>false</externalId>
+    <label>Is Formula</label>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

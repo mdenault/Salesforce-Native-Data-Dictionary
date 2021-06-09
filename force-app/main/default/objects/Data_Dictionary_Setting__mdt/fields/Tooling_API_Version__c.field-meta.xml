@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Tooling_API_Version__c</fullName>
+    <defaultValue>&quot;v51.0&quot;</defaultValue>
+    <externalId>false</externalId>
+    <fieldManageability>SubscriberControlled</fieldManageability>
+    <inlineHelpText>Use the format &quot;v51.0&quot; (but without the quotes)</inlineHelpText>
+    <label>Tooling API Version</label>
+    <length>10</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>
