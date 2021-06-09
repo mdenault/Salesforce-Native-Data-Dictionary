@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Active</label>
+    <protected>false</protected>
+    <values>
+        <field>Custom_Metadata_Types_to_Include__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Custom_Objects_to_Exclude__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Custom_Objects_to_Include__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>Custom_Settings_to_Include__c</field>
+        <value xsi:nil="true"/>
+    </values>
+    <values>
+        <field>DDF_Fields_Exclude_from_Log__c</field>
+        <value xsi:type="xsd:string">LastModifiedDate
+SystemModstamp
+Last_Processed__c
+Data_Owner_Group_Name__c</value>
+    </values>
+    <values>
+        <field>DDO_Fields_Exclude_from_Log__c</field>
+        <value xsi:type="xsd:string">LastModifiedDate
+SystemModstamp
+Last_Processed__c
+Record_Count__c</value>
+    </values>
+    <values>
+        <field>Disable_Field_Page_Layout_Tracking__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
+        <field>Field_Names_to_Exclude__c</field>
+        <value xsi:type="xsd:string">IsDeleted
+SystemModstamp
+LastViewedDate
+LastReferencedDate
+UserRecordAccessId
+SetupOwnerId</value>
+    </values>
+    <values>
+        <field>Standard_Objects_to_Include__c</field>
+        <value xsi:type="xsd:string">Account
+Campaign
+CampaignMember
+Case
+Contact
+Contract
+Opportunity
+OpportunityLineItem
+OpportunityProduct
+Product2</value>
+    </values>
+    <values>
+        <field>Tooling_API_Version__c</field>
+        <value xsi:type="xsd:string">v51.0</value>
+    </values>
+</CustomMetadata>
