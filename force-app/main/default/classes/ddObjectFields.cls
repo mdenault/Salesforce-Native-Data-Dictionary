@@ -3,7 +3,6 @@ public with sharing class ddObjectFields {
     private Data_Dictionary_Object__c ddo;
     private List<Data_Dictionary_Field__c> fields;
     private Map<String, Data_Dictionary_Field__c> fieldMap;
-    //private Map<String, Integer> fieldPosMap;
     private List<FieldDefinition> fieldDefs;
     private Map<String, FieldDefinition> fieldDefMap;
     private List<String> newList;
@@ -14,9 +13,8 @@ public with sharing class ddObjectFields {
         this.ddo = new Data_Dictionary_Object__c();
         this.fields = new List<Data_Dictionary_Field__c>();
         this.fieldDefMap = new Map<String, FieldDefinition>();
-
         this.fieldMap = new Map<String, Data_Dictionary_Field__c>();
-        //this.fieldPosMap = new Map<String, Integer>();
+        this.newList = new List<String>();
     }
 
     public Boolean SetObjectId(Id idVal) {
@@ -41,6 +39,7 @@ public with sharing class ddObjectFields {
     public Boolean Fill() {
         this.fillFromDDFs();
         this.fillFromFieldDefs();
+        this.updateFieldMap();
         this.fillFromDescribe();
         this.updateFieldMap();
 
@@ -255,11 +254,11 @@ public with sharing class ddObjectFields {
 
     public Boolean fillFromDescribe() {
         List<Schema.DescribeSobjectResult> results = Schema.describeSObjects(new List<String>{this.ddo.API_Name__c});
-        Map<String, Schema.SObjectField> fieldMap = results[0].fields.getMap();
+        Map<String, Schema.SObjectField> fieldDescMap = results[0].fields.getMap();
 
         for (FieldDefinition fd : this.fieldDefs) {
-            if (fieldMap.containsKey(fd.QualifiedApiName.toLowerCase())) {
-                Schema.DescribeFieldResult fieldDescribe = fieldMap.get(fd.QualifiedApiName.toLowerCase()).getDescribe();
+            if (fieldDescMap.containsKey(fd.QualifiedApiName.toLowerCase()) && this.fieldMap.containsKey(fd.QualifiedApiName)) {
+                Schema.DescribeFieldResult fieldDescribe = fieldDescMap.get(fd.QualifiedApiName.toLowerCase()).getDescribe();
                 Data_Dictionary_Field__c ddfItem = this.fieldMap.get(fd.QualifiedApiName);
 
                 // Field ID
