@@ -7,6 +7,7 @@ public with sharing class ddCoreService {
 
     public static final String OBJECT_TYPE_STANDARDOBJECT = 'Standard Object';
     public static final String OBJECT_TYPE_CUSTOMOBJECT = 'Custom Object';
+    public static final String OBJECT_TYPE_EXTERNALOBJECT = 'External Object';
     public static final String OBJECT_TYPE_CUSTOMSETTING = 'Custom Setting';
     public static final String OBJECT_TYPE_CUSTOMMETADATA = 'Custom Metadata Type';
     public static final String OBJECT_TYPE_BIGOBJECT = 'Big Object';

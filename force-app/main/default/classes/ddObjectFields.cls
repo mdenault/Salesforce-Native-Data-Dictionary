@@ -44,7 +44,6 @@ public with sharing class ddObjectFields {
         this.updateFieldMap();
 
         this.fillCreateDates();
-
         this.fillPermissions();
         this.fillOwnership();
         this.fillPageLayouts();
@@ -67,7 +66,7 @@ public with sharing class ddObjectFields {
         return true;
     }
 
-    private void updateFieldMap() {
+    public void updateFieldMap() {
         for (Data_Dictionary_Field__c ddf : this.fields) {
             this.fieldMap.put(ddf.API_Name__c, ddf);
         }
@@ -90,7 +89,7 @@ public with sharing class ddObjectFields {
         return data;
     }
 
-    private Boolean fillCreateDates() {
+    public Boolean fillCreateDates() {
         if (this.newList != null && this.newList.size() > 0) {
             List<Object> toolingData = this.getCustomFieldToolingData();
             for (String fieldApi : this.newList) {
@@ -212,25 +211,25 @@ public with sharing class ddObjectFields {
         Map<Id, Group> publicGroupsMap = ddCoreService.getPublicGroupMap();
 
         for (FieldDefinition fd : this.fieldDefs) {
-            Data_Dictionary_Field__c ddfItem = this.fieldMap.get(fd.QualifiedApiName);
-
-            if (fd.BusinessOwnerId != null) {
-                Schema.sObjectType entityType = fd.BusinessOwnerId.getSObjectType();
-                if (entityType == User.sObjectType) {
-                    ddfItem.Data_Owner_User__c = fd.BusinessOwnerId;
-                    ddfItem.Data_Owner_Group_Name__c = null;
-                    ddfItem.Data_Owner_Group_ID__c = null;
+            if (this.fieldMap.containsKey(fd.QualifiedApiName)) {
+                Data_Dictionary_Field__c ddfItem = this.fieldMap.get(fd.QualifiedApiName);
+                if (fd.BusinessOwnerId != null) {
+                    Schema.sObjectType entityType = fd.BusinessOwnerId.getSObjectType();
+                    if (entityType == User.sObjectType) {
+                        ddfItem.Data_Owner_User__c = fd.BusinessOwnerId;
+                        ddfItem.Data_Owner_Group_Name__c = null;
+                        ddfItem.Data_Owner_Group_ID__c = null;
+                    } else {
+                        ddfItem.Data_Owner_User__c = null;
+                        ddfItem.Data_Owner_Group_Name__c = ddCoreService.getPublicGroupNameById(fd.BusinessOwnerId, publicGroupsMap);
+                        ddfItem.Data_Owner_Group_ID__c = fd.BusinessOwnerId;
+                    }
                 } else {
                     ddfItem.Data_Owner_User__c = null;
-                    ddfItem.Data_Owner_Group_Name__c = ddCoreService.getPublicGroupNameById(fd.BusinessOwnerId, publicGroupsMap);
-                    ddfItem.Data_Owner_Group_ID__c = fd.BusinessOwnerId;
+                    ddfItem.Data_Owner_Group_Name__c = null;
+                    ddfItem.Data_Owner_Group_ID__c = null;
                 }
-            } else {
-                ddfItem.Data_Owner_User__c = null;
-                ddfItem.Data_Owner_Group_Name__c = null;
-                ddfItem.Data_Owner_Group_ID__c = null;
             }
-
         }
 
         return true;
@@ -335,19 +334,34 @@ public with sharing class ddObjectFields {
         return true;
     }
 
+    private Integer getFieldPos(String ddfId) {
+        Integer found = -1;
+        Integer i = -1;
+        for (Data_Dictionary_Field__c ddf : this.fields) {
+            if (ddfId.equals(ddf.Id)) {
+                found = i + 1;
+                break;
+            }
+            i++;
+        }
+        return found;
+    }
+
     public Boolean fillFromFieldDefs() {
         this.SetFieldDefs();
 
         for (FieldDefinition fd : this.fieldDefs) {
             Data_Dictionary_Field__c ddfItem = new Data_Dictionary_Field__c();
             
+            System.debug('Processing ' + fd.QualifiedApiName + ', DurableId = ' + fd.DurableId);
+
             // fieldPos is the postion in this.fields of this field
             Integer fieldPos = -1;
 
             for (Data_Dictionary_Field__c ddf : this.fields) {
-                if (ddf.Durable_ID__c == fd.DurableId) {
+                if (fd.DurableId.equals(ddf.Durable_ID__c)) {
                     ddfItem.Id = ddf.Id;
-                    fieldPos = this.fields.indexOf(ddf);
+                    fieldPos = getFieldPos(ddf.Id);
                     break;
                 }
             }
@@ -356,6 +370,7 @@ public with sharing class ddObjectFields {
 
             ddfItem.Name = fd.Label;
             ddfItem.API_Name__c = fd.QualifiedApiName;
+            ddfItem.Namespace__c = fd.NamespacePrefix;
             ddfItem.Description__c = fd.Description;
 
             ddfItem.Length__c = fd.Length;

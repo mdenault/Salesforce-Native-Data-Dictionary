@@ -56,19 +56,21 @@ public inherited sharing class ddObject {
         return true;
     }
 
-    public String GetObjectTypeFromEntDef(EntityDefinition ed) {
+    public static String GetObjectTypeFromEntDef(EntityDefinition ed) {
         if (ed.IsCustomSetting) {
             return ddCoreService.OBJECT_TYPE_CUSTOMSETTING;
         } else if (ed.QualifiedApiName.toLowerCase().right(5) ==  '__mdt') {
             return ddCoreService.OBJECT_TYPE_CUSTOMMETADATA;
-        } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__c') {
+        } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__c' || ed.QualifiedApiName.toLowerCase().right(5) ==  '__kav') {
+            // The __kav suffix is Knowledge, which is Salesforce internally considers to be a custom object
             return ddCoreService.OBJECT_TYPE_CUSTOMOBJECT;
         } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__b') {
             return ddCoreService.OBJECT_TYPE_BIGOBJECT;
         } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__e') {
             return ddCoreService.OBJECT_TYPE_PLATFORMEVENT;
+        } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__x') {
+            return ddCoreService.OBJECT_TYPE_EXTERNALOBJECT;
         } else {
-            // This also covers oddball objects such as Knowledge which ends in __kav
             return ddCoreService.OBJECT_TYPE_STANDARDOBJECT;
         }
     }
@@ -150,8 +152,9 @@ public inherited sharing class ddObject {
             this.ddo.Name = ed.Label;
             this.ddo.API_Name__c = ed.QualifiedApiName;
             this.ddo.Prefix__c = ed.KeyPrefix;
+            this.ddo.Namespace__c = ed.NamespacePrefix;
             this.ddo.Durable_ID__c = ed.DurableId;
-            this.ddo.Type__c = this.GetObjectTypeFromEntDef(ed);
+            this.ddo.Type__c = GetObjectTypeFromEntDef(ed);
 
             this.ddo.Metadata_Last_Modified_by__c = ed.LastModifiedById;
             this.ddo.Metadata_Last_Modified_Date__c = ed.LastModifiedDate;
@@ -167,7 +170,7 @@ public inherited sharing class ddObject {
     public Boolean FillFromEntityDef() {
         // Get any EntityDefinition data
         List<EntityDefinition> entityData = [
-            SELECT DeploymentStatus, DeveloperName, DurableId, QualifiedApiName, IsCustomSetting, KeyPrefix, Label, LastModifiedById, LastModifiedDate, PluralLabel, ExternalSharingModel, InternalSharingModel
+            SELECT DeploymentStatus, DeveloperName, DurableId, QualifiedApiName, IsCustomSetting, KeyPrefix, Label, LastModifiedById, LastModifiedDate, NamespacePrefix, PluralLabel, ExternalSharingModel, InternalSharingModel
             FROM EntityDefinition
             WHERE DurableId = :this.ddo.Durable_ID__c
         ];
@@ -194,7 +197,6 @@ public inherited sharing class ddObject {
     }
 
     public Boolean FillPageLayouts() {
-        // Page Layouts
         List<String> pageLayoutList = ddCoreService.getPageLayoutNameListForObject(this.ddo.Durable_ID__c, this.ddo.API_Name__c, false);
         this.ddo.Page_Layouts__c = String.join(pageLayoutList, '\n');
 
@@ -202,7 +204,6 @@ public inherited sharing class ddObject {
     }
 
     public Boolean FillRecordTypes() {
-        // Record Types
         String recordTypeNames = '';
         List<RecordType> rTypes = [
             SELECT Id, Name
