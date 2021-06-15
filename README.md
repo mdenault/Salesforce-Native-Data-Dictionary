@@ -21,12 +21,12 @@ By building all this natively on platform, we get a number of advantages:
 
 - It's all in Salesforce--you and your users already know where it is and how to use it.
 - Because they're just custom objects, you can grant access to all or part of the Data Dictionary to your users via profiles, permission sets, and sharing rules.
-- You can add your own custom fields to these objects to capture information specific to your org. We use Marketing Cloud at my current job, so maybe we'd add a "Synced to Marketing Cloud" checkbox field to the Data Dictionary Fields object, to help us remember which fields are used there. (Fields you add must be manually populated, of course, but data updates to them can be captured in the Change Logs if you like.)
+- You can add your own custom fields to these objects to capture information specific to your org. Fields you add must be manually populated, of course, but data updates to them can be captured in the Change Logs if you like.
 - Easy to link to standard objects such as Cases and Knowledge.
-- As noted above, because each entry is just a record in Salesforce, if an object or field is deleted, we can label the entry as deleted but otherwise persist the data, providing a durable record of changes over time.
-- You can customize how it is displayed with page layouts and Dynamic Forms. Include only the parts you need. Extend it with a Files tab for supplementary data, or Chatter to permit discussions, etc.
+- If an object or field is deleted, we can label its entry in the Dictionary as deleted but otherwise persist the data, providing a durable record of changes over time.
+- You can customize how the Dictionary is displayed using normal Salesforce tools like page layouts and Dynamic Forms. Include only the parts you need. Extend it with a Files tab for supplementary data, or Chatter to permit discussions, etc.
 - You can report on this data using Salesforce native reporting. It's very easy to create a report of all fields with their descriptions and help text for a certain object; or all fields with data owned by a certain user or public group; or all fields accesible to a certain Permission Set Group; or all field permission changes in the last two days; or anything else you can do with report filters.
-- And to bring things full circle, of course you can export this data to Excel from Salesforce reports.
+- To bring things full circle, of course you can export this data to Excel from Salesforce reports.
 
 And you can extend all of this even further using all the tools available to you on the Salesforce platform, declaratively or with code.
 
@@ -65,9 +65,15 @@ The project comes with two permission sets, "Data Dictionary - Read Only" and "D
 
 ### Do a test run
 
-Depending on the complexity of your org, and how busy it and its infrastructure is, a run of the tool to populate data can take anywhere from 10 minutes to several hours.
+Depending on the complexity of your org, and how busy it and its infrastructure are at the moment, a run of the tool to populate data can take anywhere from 10 minutes to several hours.
 
-Initiate a test run 
+Initiate a test run by opening the Developer Console and executing the following anonymous Apex:
+
+```
+ddObjectProcess ddproc = new ddObjectProcess();
+ddproc.execute();
+```
+This will initiate a sequential series of jobs to populate the Data Dictionary (see "Architecture" below).
 
 I would suggest doing at least one and if possible several test runs to verify:
 
@@ -89,7 +95,7 @@ If you want the sync to update once per day, which is what I'd recommend for mos
 3. ddFieldProcessBatch cycles through each Data Dictionary Object, retrieves the fields for that object, and in a series of passes fills in the field details. It then calls ddFieldDetailsBatch.
   - Processing happens one object per batch, but the batch class chains to itself several times to fill in different sets of information.
 4. ddFieldDetailsBatch cycles through different sets of the created fields to calculate additional per-field information such as usage by recordtype.
-- Processing happens in groups of fields; again, the batch class chains to itself several times to fill in different sets of information.
+  - Processing happens in groups of fields; again, the batch class chains to itself several times to fill in different sets of information.
 
 So the basic pattern is, create the basics quickly, and then fill in the details over separate passes. This approach proved advisable during initial testing to mitigate issues such as CPU timeouts and heap limit overages.
 

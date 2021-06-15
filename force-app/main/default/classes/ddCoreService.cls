@@ -24,7 +24,7 @@ public with sharing class ddCoreService {
     public static final List<String> FIELD_NAMES_NOTCOUNTABLE = new List<String>{'Id', 'CreatedDate', 'SystemModstamp'};
     public static final List<String> FIELD_TRUNCTYPES_PSEUDOCOUNTABLE = new List<String>{'Checkbox'};
 
-    public static String GetUserSessionId() {
+    public static String getUserSessionId() {
         return UserInfo.getSessionId();
     }
 

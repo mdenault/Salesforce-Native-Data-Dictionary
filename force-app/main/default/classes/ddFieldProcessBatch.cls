@@ -21,9 +21,16 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
 
     public List<SObject> start(Database.BatchableContext bc) {
         if (String.isNotEmpty(this.objectApiName)) {
-            return [SELECT Id, Durable_ID__c, API_Name__c FROM Data_Dictionary_Object__c WHERE API_Name__c = :this.objectApiName LIMIT 1];
+            return [
+                SELECT Id, Durable_ID__c, API_Name__c
+                FROM Data_Dictionary_Object__c
+                WHERE API_Name__c = :this.objectApiName
+                LIMIT 1];
         } else {
-            return [SELECT Id, Durable_ID__c, API_Name__c FROM Data_Dictionary_Object__c ORDER BY Name];
+            return [
+                SELECT Id, Durable_ID__c, API_Name__c
+                FROM Data_Dictionary_Object__c
+                ORDER BY Name];
         }
     }
 
@@ -41,6 +48,7 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
                 ddf.fillFromFieldDefs();
                 ddf.updateFieldMap();
                 ddf.fillFromDescribe();
+                ddf.fillCreateDates();
             } else if (this.mode == 'only-page-layouts') {
                 ddf.fillFromDDFs();
                 ddf.fillPageLayouts();
@@ -49,7 +57,7 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
                 ddf.fillPermissions();
             } else if (this.mode == 'only-create-dates') {
                 ddf.fillFromDDFs();
-                ddf.fillCreateDates();
+                ddf.fillOwnership();
             } else if (this.mode == 'all') {
                 ddf.Fill();
             }
@@ -59,21 +67,25 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
     }
 
     public void finish(Database.BatchableContext bc) {
+        if (Test.isRunningTest() == false) {
+            if (this.mode == 'only-basics') {
+                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName , 'only-page-layouts');
+                Database.executeBatch(newBatch, 1);
+            } else if (this.mode == 'only-page-layouts') {
+                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName, 'only-permissions');
+                Database.executeBatch(newBatch, 1);
+            } else if (this.mode == 'only-permissions') {
+                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName, 'only-create-dates');
+                Database.executeBatch(newBatch, 1);
+            }
 
-        if (this.mode == 'only-basics') {
-            ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName , 'only-page-layouts');
-            Database.executeBatch(newBatch, 1);
-        } else if (this.mode == 'only-page-layouts') {
-            ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName, 'only-permissions');
-            Database.executeBatch(newBatch, 1);
-        } else if (this.mode == 'only-permissions') {
-            ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName, 'only-create-dates');
-            Database.executeBatch(newBatch, 1);
+            // TODO: determine if we fire off this batch, and the appropriate batch size, based on metadata
+            // } else {
+            // ddFieldDetailsBatch ddfb = new ddFieldDetailsBatch();
+            // Database.executeBatch(ddfb, 10);
+            // }
+
         }
-
-        // TODO: determine if we fire off this batch, and the appropriate batch size, based on metadata
-        //ddFieldDetailsBatch ddfb = new ddFieldDetailsBatch();
-        //Database.executeBatch(ddfb, 10);
     }
 
 }

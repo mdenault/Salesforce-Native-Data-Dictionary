@@ -54,7 +54,7 @@ public with sharing class ddObjectFields {
     public Boolean fillFromDDFs() {
         // Get the Data Dictionary data
         List<Data_Dictionary_Field__c> ddfList = [
-            SELECT Id, Durable_ID__c, Name, API_Name__c, Field_ID__c, Last_Processed__c, Help_Text__c, Description__c
+            SELECT Id, Status__c, Durable_ID__c, Name, API_Name__c, Field_ID__c, Last_Processed__c, Help_Text__c, Description__c
             FROM Data_Dictionary_Field__c
             WHERE Object__c = :this.ddo.Id
         ];
@@ -90,10 +90,18 @@ public with sharing class ddObjectFields {
     }
 
     public Boolean fillCreateDates() {
+        System.debug('Starting fillCreateDates');
         if (this.newList != null && this.newList.size() > 0) {
             List<Object> toolingData = this.getCustomFieldToolingData();
-            for (String fieldApi : this.newList) {
 
+            System.debug('Starting fillCreateDates inner loop');
+            for (Object obj : toolingData) {
+                Map<String, Object> record = (Map<String, Object>)obj;
+
+                String devName = (String)record.get('DeveloperName');
+                String createDate = (String)record.get('CreatedDate');
+
+                System.debug('Dev Name ' + devName + ' was created ' + createDate);
             }
         }
 
@@ -145,62 +153,116 @@ public with sharing class ddObjectFields {
         Map<Id, Profile> profilesMap = ddCoreService.getProfilesMap();
         Map<Id, PermissionSetGroup> permGroupsMap = ddCoreService.getPermGroupsMap();
 
-        List<FieldPermissions> fieldPerms = [
+        // We're going to store permission data in this nested map. The outer key will be the field
+        // API name, and the inner map will be keys to the different types of permissions, and a 
+        // list of strings representing the name of the permission set/perm set group/profile.
+        Map<String, Map<String, List<String>>> permMap = new Map<String, Map<String, List<String>>>();
+
+        // Set up the map
+        for (Data_Dictionary_Field__c ddfItem : this.fields) {
+            if (ddfItem.Status__c == ddCoreService.FIELD_STATUS_ACTIVE) {
+                Map<String, List<String>> innerMap = new Map<String, List<String>>();
+                innerMap.put('fieldPermsReadMap', new List<String>());
+                innerMap.put('fieldPermsEditMap', new List<String>());
+                innerMap.put('fieldPermGroupsReadMap', new List<String>());
+                innerMap.put('fieldPermGroupsMap', new List<String>());
+                innerMap.put('fieldProfilesReadMap', new List<String>());
+                innerMap.put('fieldProfilesEditMap', new List<String>());
+
+                permMap.put(ddfItem.API_Name__c, innerMap);
+
+                innerMap = null;
+            }
+        }
+
+        for (List<FieldPermissions> fieldPerms : [
             SELECT Parent.Label, Parent.PermissionSetGroupId, Parent.ProfileId, Parent.IsCustom, Field, PermissionsRead, PermissionsEdit 
             FROM FieldPermissions 
             WHERE sObjectType = :this.ddo.API_Name__c
             ORDER BY Parent.Label
-        ];
-
-        for (Data_Dictionary_Field__c ddfItem : this.fields) {
-
-            // Field permissions
-            String fieldPermsRead = '';
-            String fieldPermsEdit = '';
-            String fieldPermGroupsRead = '';
-            String fieldPermGroupsEdit = '';
-            String fieldProfilesRead = '';
-            String fieldProfilesEdit = '';
-
-            // TODO: certain fields have implied permissions. For example required fields have read/edit for all profiles.
+        ]) {
             for (FieldPermissions fieldPerm : fieldPerms) {
-                if (fieldPerm.Field == this.ddo.API_Name__c + '.' + ddfItem.API_Name__c) {
-                    if (fieldPerm.Parent.IsCustom && fieldPerm.Parent.ProfileID == null && fieldPerm.Parent.PermissionSetGroupId == null) {
-                        if (fieldPerm.PermissionsRead) {
-                            fieldPermsRead = fieldPermsRead + fieldPerm.Parent.Label + '\n';
-                        }
-                        if (fieldPerm.PermissionsEdit) {
-                            fieldPermsEdit = fieldPermsEdit + fieldPerm.Parent.Label + '\n';
-                        }
-                    } else if (fieldPerm.Parent.PermissionSetGroupId != null) {
-                        String permGroupName = permGroupsMap.get(fieldPerm.Parent.PermissionSetGroupId).MasterLabel;
-                        if (fieldPerm.PermissionsRead) {
-                            fieldPermGroupsRead = fieldPermGroupsRead + permGroupName + '\n';
-                        }
-                        if (fieldPerm.PermissionsEdit) {
-                            fieldPermGroupsEdit = fieldPermGroupsEdit + permGroupName + '\n';
-                        }
-                    } else if (fieldPerm.Parent.ProfileID != null) {
-                        String profileName = profilesMap.get(fieldPerm.Parent.ProfileID).Name;
-                        if (fieldPerm.PermissionsRead) {
-                            fieldProfilesRead = fieldProfilesRead + profileName + '\n';
-                        }
-                        if (fieldPerm.PermissionsEdit) {
-                            fieldProfilesEdit = fieldProfilesEdit + profileName + '\n';
-                        }
+                String fieldApiName = fieldPerm.Field.substringAfterLast('.');
+                String type = '';
+                String label = '';
+                if (fieldPerm.Parent.IsCustom && fieldPerm.Parent.ProfileID == null && fieldPerm.Parent.PermissionSetGroupId == null) {
+                    label = fieldPerm.Parent.Label;
+                    if (fieldPerm.PermissionsRead) {
+                        type = 'fieldPermsReadMap';
+                    }
+                    if (fieldPerm.PermissionsEdit) {
+                        type = 'fieldPermsEditMap';
+                    }
+                } else if (fieldPerm.Parent.PermissionSetGroupId != null) {
+                    label = permGroupsMap.get(fieldPerm.Parent.PermissionSetGroupId).MasterLabel;
+                    if (fieldPerm.PermissionsRead) {
+                        type = 'fieldPermGroupsReadMap';
+                    }
+                    if (fieldPerm.PermissionsEdit) {
+                        type = 'fieldPermGroupsEditMap';
+                    }
+                } else if (fieldPerm.Parent.ProfileID != null) {
+                    label = profilesMap.get(fieldPerm.Parent.ProfileID).Name;
+                    if (fieldPerm.PermissionsRead) {
+                        type = 'fieldProfilesReadMap';
+                    }
+                    if (fieldPerm.PermissionsEdit) {
+                        type = 'fieldProfilesEditMap';
                     }
                 }
+
+                if (String.isNotEmpty(type) && permMap.containsKey(fieldApiName)) {
+                    List<String> temp = permMap.get(fieldApiName).get(type);
+                    temp.add(label);
+                    permMap.get(fieldApiName).put(type, temp);
+                    temp = null;
+                }
+
+                fieldPerm = null;
             }
 
+            fieldPerms = null;
+        }
 
-            ddfItem.Permission_Set_Groups_Read__c = fieldPermGroupsRead;
-            ddfItem.Permission_Set_Groups_Edit__c = fieldPermGroupsEdit;
+        // Null out no-longer needed data to conserve heap space
+        profilesMap = null;
+        permGroupsMap = null;
 
-            ddfItem.Permission_Sets_Read__c = fieldPermsRead;
-            ddfItem.Permission_Sets_Edit__c = fieldPermsEdit;
+        for (Data_Dictionary_Field__c ddfItem : this.fields) {
+            // Empty out any existing data
+            ddfItem.Permission_Set_Groups_Read__c = '';
+            ddfItem.Permission_Set_Groups_Edit__c = '';
+            ddfItem.Permission_Sets_Read__c = '';
+            ddfItem.Permission_Sets_Edit__c = '';
+            ddfItem.Profiles_Read__c = '';
+            ddfItem.Profiles_Edit__c = '';
 
-            ddfItem.Profiles_Read__c = fieldProfilesRead;
-            ddfItem.Profiles_Edit__c = fieldProfilesEdit;
+            if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
+                ddfItem.Permission_Set_Groups_Read__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap'), '\n');
+            }
+
+            if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
+                ddfItem.Permission_Set_Groups_Edit__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsEditMap'), '\n');
+            }
+
+            if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
+                ddfItem.Permission_Sets_Read__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n');
+            }
+
+            if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
+                ddfItem.Permission_Sets_Edit__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n');
+            }
+
+            if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
+                ddfItem.Profiles_Read__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n');
+            }
+            
+            if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
+                ddfItem.Profiles_Edit__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n');
+            }
+
+            // Again, remove not-longer needed values to reduce heap usage
+            permMap.remove(ddfItem.API_Name__c);
         }
 
         return true;
@@ -216,10 +278,12 @@ public with sharing class ddObjectFields {
                 if (fd.BusinessOwnerId != null) {
                     Schema.sObjectType entityType = fd.BusinessOwnerId.getSObjectType();
                     if (entityType == User.sObjectType) {
+                        System.debug('Owner is a user, ID ' + fd.BusinessOwnerId);
                         ddfItem.Data_Owner_User__c = fd.BusinessOwnerId;
                         ddfItem.Data_Owner_Group_Name__c = null;
                         ddfItem.Data_Owner_Group_ID__c = null;
                     } else {
+                        System.debug('Owner is a group, ID ' + fd.BusinessOwnerId);
                         ddfItem.Data_Owner_User__c = null;
                         ddfItem.Data_Owner_Group_Name__c = ddCoreService.getPublicGroupNameById(fd.BusinessOwnerId, publicGroupsMap);
                         ddfItem.Data_Owner_Group_ID__c = fd.BusinessOwnerId;
@@ -334,34 +398,21 @@ public with sharing class ddObjectFields {
         return true;
     }
 
-    private Integer getFieldPos(String ddfId) {
-        Integer found = -1;
-        Integer i = -1;
-        for (Data_Dictionary_Field__c ddf : this.fields) {
-            if (ddfId.equals(ddf.Id)) {
-                found = i + 1;
-                break;
-            }
-            i++;
-        }
-        return found;
-    }
-
     public Boolean fillFromFieldDefs() {
         this.SetFieldDefs();
 
         for (FieldDefinition fd : this.fieldDefs) {
             Data_Dictionary_Field__c ddfItem = new Data_Dictionary_Field__c();
-            
-            System.debug('Processing ' + fd.QualifiedApiName + ', DurableId = ' + fd.DurableId);
 
-            // fieldPos is the postion in this.fields of this field
+            // fieldPos is the postion in this.fields of this field; we'll use it later on to substitute
+            // the updated
             Integer fieldPos = -1;
 
             for (Data_Dictionary_Field__c ddf : this.fields) {
                 if (fd.DurableId.equals(ddf.Durable_ID__c)) {
-                    ddfItem.Id = ddf.Id;
-                    fieldPos = getFieldPos(ddf.Id);
+                    ddfItem = this.fields.get(this.fields.indexOf(ddf));
+                    // ddfItem.Id = ddf.Id;
+                    // fieldPos = this.fields.indexOf(ddf);
                     break;
                 }
             }
@@ -397,13 +448,14 @@ public with sharing class ddObjectFields {
             ddfItem.Metadata_Last_Modified_by__c = fd.LastModifiedById;
             ddfItem.Metadata_Last_Modified_Date__c = fd.LastModifiedDate;
 
-            ddfItem.Last_Processed__c = Datetime.now();
+            Datetime curDateTime = Datetime.now();
 
-            if (fieldPos > -1) {
-                this.fields.set(fieldPos, ddfItem);
+            if (ddfItem.Id != null) { // (fieldPos > -1) {
+                ddfItem.Last_Processed__c = curDateTime;
+                // this.fields.set(fieldPos, ddfItem);
             } else {
                 ddfItem.Object__c = this.ddo.Id;
-                ddfItem.First_Sync__c = Datetime.now();
+                ddfItem.First_Sync__c = curDateTime;
                 this.newList.add(ddfItem.API_Name__c);
 
                 this.fields.add(ddfItem);

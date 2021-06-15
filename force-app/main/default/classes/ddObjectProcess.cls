@@ -13,18 +13,6 @@ public with sharing class ddObjectProcess implements System.Schedulable {
         execute();
     }
 
-    public static List<String> getDDODurableIds() {
-        List<String> ddoDurableIds = new List<String>();
-        List<Data_Dictionary_Object__c> ddoList = [
-            SELECT Id, Durable_Id__c
-            FROM Data_Dictionary_Object__c
-        ];
-        for (Data_Dictionary_Object__c ddo : ddoList) {
-            ddoDurableIds.add(ddo.Durable_ID__c);
-        }
-        return ddoDurableIds;
-    }
-
     public void execute() {
         List<Data_Dictionary_Object__c> newDataObjects = new List<Data_Dictionary_Object__c>();
 
@@ -52,9 +40,21 @@ public with sharing class ddObjectProcess implements System.Schedulable {
 
         // Call our batch to process these Data Dictionary Objects
         if (Test.isRunningTest() == false) {
-            ddObjectProcessBatch ddob = new ddObjectProcessBatch(null);
+            ddObjectProcessBatch ddob = new ddObjectProcessBatch();
             Database.executeBatch(ddob, 1);
         }
+    }
+
+    public static List<String> getDDODurableIds() {
+        List<String> ddoDurableIds = new List<String>();
+        List<Data_Dictionary_Object__c> ddoList = [
+            SELECT Id, Durable_Id__c
+            FROM Data_Dictionary_Object__c
+        ];
+        for (Data_Dictionary_Object__c ddo : ddoList) {
+            ddoDurableIds.add(ddo.Durable_ID__c);
+        }
+        return ddoDurableIds;
     }
 
     public static List<EntityDefinition> filterEntDefList(List<EntityDefinition> entDefs) {
@@ -94,7 +94,7 @@ public with sharing class ddObjectProcess implements System.Schedulable {
     }
 
     public static List<EntityDefinition> getRawEntityDefList() {
-        List<EntityDefinition> returnList = new List<EntityDefinition>();
+        Set<EntityDefinition> returnSet = new Set<EntityDefinition>();
         Boolean done = false;
         String lastObject = '';
 
@@ -103,7 +103,7 @@ public with sharing class ddObjectProcess implements System.Schedulable {
         // number of custom objects is 3000. So we can't just use a numeric offset here, instead we
         // need to sort and use a dynamic WHERE clause to chunk the entities safely.
         while (done == false) {
-            String query = 'SELECT DurableId, DeveloperName, IsCustomSetting, KeyPrefix, Label, QualifiedApiName, LastModifiedById, LastModifiedDate, PluralLabel, InternalSharingModel, ExternalSharingModel';
+            String query = 'SELECT DurableId, DeveloperName, IsCustomSetting, KeyPrefix, NamespacePrefix, Label, QualifiedApiName, LastModifiedById, LastModifiedDate, PluralLabel, InternalSharingModel, ExternalSharingModel';
             query += ' FROM EntityDefinition';
             if (String.isNotEmpty(lastObject)) {
                 query += ' WHERE DurableId > \'' + lastObject + '\'';
@@ -114,7 +114,7 @@ public with sharing class ddObjectProcess implements System.Schedulable {
             List<EntityDefinition> entDefs = Database.query(query);
             Integer retSize = entDefs.size();
             if (retSize > 0) {
-                returnList.addAll(entDefs);
+                returnSet.addAll(entDefs);
                 if (retSize == 200) {
                     lastObject = entDefs[199].DurableId;
                 }
@@ -125,7 +125,7 @@ public with sharing class ddObjectProcess implements System.Schedulable {
             }
         }
 
-        return returnList;
+        return new List<EntityDefinition>(returnSet);
     }
 
 }
