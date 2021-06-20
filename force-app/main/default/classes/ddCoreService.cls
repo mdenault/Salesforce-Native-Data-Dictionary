@@ -28,6 +28,10 @@ public with sharing class ddCoreService {
         return UserInfo.getSessionId();
     }
 
+    public static String formatDateTime(String utcDate){
+    	return utcDate.replace('T', ' ');
+    }
+
     public static Map<Id, Profile> getProfilesMap() {
         List<Profile> profiles = [
             SELECT Id, Name
@@ -133,7 +137,7 @@ public with sharing class ddCoreService {
     public static Data_Dictionary_Setting__mdt getActiveSettings() {
         Data_Dictionary_Setting__mdt setting = new Data_Dictionary_Setting__mdt();
         List<Data_Dictionary_Setting__mdt> mdtSettings = [
-            SELECT Id, Standard_Objects_to_Include__c, Custom_Settings_to_Include__c, Custom_Objects_to_Include__c, Custom_Objects_to_Exclude__c, DDF_Fields_Exclude_from_Log__c, DDO_Fields_Exclude_from_Log__c, Field_Names_to_Exclude__c, Custom_Metadata_Types_to_Include__c, Tooling_API_Version__c
+            SELECT Id, Standard_Objects_to_Include__c, Namespaces_to_Exclude__c, Custom_Settings_to_Include__c, Custom_Objects_to_Include__c, Custom_Objects_to_Exclude__c, DDF_Fields_Exclude_from_Log__c, DDO_Fields_Exclude_from_Log__c, Field_Names_to_Exclude__c, Custom_Metadata_Types_to_Include__c, Tooling_API_Version__c
             FROM Data_Dictionary_Setting__mdt
             WHERE MasterLabel = 'Active'
         ];
@@ -142,6 +146,7 @@ public with sharing class ddCoreService {
         } else {
             setting.Tooling_API_Version__c = 'v51.0';
             setting.Standard_Objects_to_Include__c = 'Account\nCampaign\nCampaignMember\nCase\nContact\nOpportunity\nProduct2';
+            setting.Namespaces_to_Exclude__c = '';
             setting.Custom_Objects_to_Include__c = '';
             setting.Custom_Objects_to_Exclude__c = '';
             setting.Custom_Metadata_Types_to_Include__c = 'None';

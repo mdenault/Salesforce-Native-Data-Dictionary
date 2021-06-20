@@ -18,9 +18,11 @@ public with sharing class ddObjectProcess implements System.Schedulable {
 
         // Get the raw list of all Entity Definitions
         List<EntityDefinition> entDefList = getRawEntityDefList();
+        System.debug('entDefList size 1 = ' + entDefList.size());
 
         // Filter out the ones we don't want
         entDefList = filterEntDefList(entDefList);
+        System.debug('entDefList size 2 = ' + entDefList.size());
 
         // Get a list of existing Data Dictionary Objects, to compare/contrast with
         List<String> ddoDurableIds = getDDODurableIds();
@@ -111,8 +113,11 @@ public with sharing class ddObjectProcess implements System.Schedulable {
             query += ' ORDER BY DurableId ASC';
             query += ' LIMIT 200';
 
+            System.debug(query);
+
             List<EntityDefinition> entDefs = Database.query(query);
             Integer retSize = entDefs.size();
+            System.debug('Return size = ' + String.valueOf(retSize));
             if (retSize > 0) {
                 returnSet.addAll(entDefs);
                 if (retSize == 200) {

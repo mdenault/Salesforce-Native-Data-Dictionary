@@ -73,35 +73,53 @@ public with sharing class ddObjectFields {
     }
 
     private List<Object> getCustomFieldToolingData() {
+        List<Object> data = new List<Object>();
+        
         String baseURL = URL.getSalesforceBaseUrl().toExternalForm();
         String DeveloperName = this.ddo.API_Name__c.removeEndIgnoreCase('__c').removeEndIgnoreCase('__b').removeEndIgnoreCase('__e');
-        String fieldList = '(\'' + String.join(this.newList, '\',\'') + '\')';
+        
+        // We can only look up custom fields, and only by DeveloperName which is the bit before the "__c"
+        List<String> newFieldDevNames = new List<String>();
+        for (String s : this.newList) {
+            if (s.endsWithIgnoreCase('__c')) {
+                newFieldDevNames.add(s.removeEndIgnoreCase('__c'));
+            }
+        }
 
-        String body = ddCoreService.httpGet(baseURL +
-            '/services/data/' + ddCoreService.getActiveSettings().Tooling_API_Version__c + '/tooling/query?' +
-            'q=' + EncodingUtil.urlEncode('SELECT DeveloperName, CreatedDate, CreatedById FROM CustomField WHERE DeveloperName IN ' + fieldList + ' AND TableEnumOrId = \'' + this.ddo.Id + '\'', 'UTF-8'),
-            'GET', ddCoreService.GetUserSessionId());
-   
-        Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(body);
+        if (newFieldDevNames.size() > 0) {
+            String fieldList = '(\'' + String.join(newFieldDevNames, '\',\'') + '\')';
 
-        List<Object> data = (List<Object>)responseMap.get('records');
+            String body = ddCoreService.httpGet(baseURL +
+                '/services/data/' + ddCoreService.getActiveSettings().Tooling_API_Version__c + '/tooling/query?' +
+                'q=' + EncodingUtil.urlEncode('SELECT DeveloperName, CreatedDate, CreatedById FROM CustomField WHERE DeveloperName IN ' + fieldList + ' AND TableEnumOrId = \'' + this.ddo.Durable_ID__c + '\'', 'UTF-8'),
+                'GET', ddCoreService.GetUserSessionId());
+
+            Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(body);
+            data = (List<Object>)responseMap.get('records');
+        }
 
         return data;
     }
 
     public Boolean fillCreateDates() {
-        System.debug('Starting fillCreateDates');
         if (this.newList != null && this.newList.size() > 0) {
             List<Object> toolingData = this.getCustomFieldToolingData();
-
-            System.debug('Starting fillCreateDates inner loop');
             for (Object obj : toolingData) {
                 Map<String, Object> record = (Map<String, Object>)obj;
 
-                String devName = (String)record.get('DeveloperName');
-                String createDate = (String)record.get('CreatedDate');
+                for (Data_Dictionary_Field__c ddfItem : this.fields) {
+                    if (ddfItem.API_Name__c.endsWithIgnoreCase('__c') && ddfItem.API_Name__c.removeEndIgnoreCase('__c') == (String)record.get('DeveloperName')) {
+                        if (record.containsKey('CreatedDate')) {
+                            ddfItem.Field_Created_Date__c = Datetime.valueOf(ddCoreService.formatDateTime((String)record.get('CreatedDate')));
+                        }
+                        if (record.containsKey('CreatedById')) {
+                            ddfItem.Field_Created_by__c = (String)record.get('CreatedById');
+                        }
+                        break;
+                    }
+                }
 
-                System.debug('Dev Name ' + devName + ' was created ' + createDate);
+                record = null;
             }
         }
 

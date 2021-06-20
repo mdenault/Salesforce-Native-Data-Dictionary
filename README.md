@@ -61,7 +61,9 @@ The other settings here deal with system fields to exclude from the Dictionary, 
 
 ### Assign permissions
 
-The project comes with two permission sets, "Data Dictionary - Read Only" and "Data Dictionary - Modify All". 
+The project comes with two permission sets, "Data Dictionary - Read Only" and "Data Dictionary - Modify All".
+
+There is an App ("Data Dictionary") that you can grant access to via Setup > Manage Apps, or add the Tabs for the Data Dictionary objects to your own apps where appropriate.
 
 ### Do a test run
 

@@ -6,6 +6,100 @@ public with sharing class ddFieldList {
         this.fieldList = fieldList;
     }
 
+    public static Map<Object, List<Schema.PicklistEntry>> getDependentPicklistValues(String sObjectName, String fieldName) {
+        return getDependentPicklistValues(Schema.getGlobalDescribe().get(sObjectName).getDescribe().fields.getMap().get(fieldName));
+    }
+
+    /**
+    * @description Logic taken from https://glyntalkssalesforce.blogspot.com/2018/08/dependent-picklist-values-in-apex.html and
+    * https://salesforce.stackexchange.com/questions/4462/get-lists-of-dependent-picklist-options-in-apex
+    * @param Schema.sObjectField dependToken 
+    * @return Map<Object, List<Schema.PicklistEntry>> 
+    **/
+    public static Map<Object, List<Schema.PicklistEntry>> getDependentPicklistValues(Schema.sObjectField dependToken) {
+        Schema.DescribeFieldResult depend = dependToken.getDescribe();
+        Schema.sObjectField controlToken = depend.getController();
+        if (controlToken == null) {
+            return null;
+        }
+
+        Schema.DescribeFieldResult control = controlToken.getDescribe();
+        List<Schema.PicklistEntry> controlEntries = (control.getType() == Schema.DisplayType.Boolean ? null : control.getPicklistValues());
+     
+        String base64map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+        Map<Object, List<Schema.PicklistEntry>> dependentPicklistValues = new Map<Object, List<Schema.PicklistEntry>>();
+        for (Schema.PicklistEntry entry : depend.getPicklistValues()) {
+            if (entry.isActive()) {
+                List<String> base64chars = String.valueOf(((Map<String,Object>) JSON.deserializeUntyped(JSON.serialize(entry))).get('validFor')).split('');
+                for (Integer index = 0; index < (controlEntries != null ? controlEntries.size() : 2); index++) {
+                    Object controlValue = (controlEntries == null ? (Object) (index == 1) : (Object) (controlEntries[index].isActive() ? controlEntries[index].getLabel() : null));
+
+                    // Integer bitIndex = index / 6, bitShift = 5 - Math.mod( index, 6 );
+                    Integer bitIndex = index / 6;
+                    if (bitIndex > base64chars.size() - 1) {
+                        break;
+                    }
+                    Integer bitShift = 5 - Math.mod( index, 6 );
+
+                    if (controlValue == null || (base64map.indexOf( base64chars[ bitIndex ] ) & (1 << bitShift)) == 0) {
+                        continue;
+                    }
+                    if (!dependentPicklistValues.containsKey(controlValue)) {
+                        dependentPicklistValues.put(controlValue, new List<Schema.PicklistEntry>());
+                    }
+                    dependentPicklistValues.get(controlValue).add(entry);
+                }
+            }
+        }
+        return dependentPicklistValues;
+    }
+
+    public static PicklistEntries getPicklistValues(String objectName, Id recordTypeId, String fieldName) {
+        String requestUrl =
+            URL.getSalesforceBaseUrl().toExternalForm() +
+            '/services/data/v51.0/ui-api/object-info/' +
+            objectName +
+            '/picklist-values/' +
+            recordTypeId +
+            '/' +
+            fieldName;
+
+        // Prepare UI API request
+        HttpRequest request = new HttpRequest();
+        request.setMethod('GET');
+        request.setHeader(
+            'Authorization',
+            'Bearer ' + UserInfo.getSessionId()
+        );
+        request.setEndpoint(requestUrl);
+        // Call UI API
+        try {
+            HttpResponse httpResponse = new Http().send(request);
+            if (httpResponse.getStatusCode() == 200) {
+                // Parse JSON response into PicklistEntries
+                entries = (PicklistEntries) JSON.deserialize(
+                    httpResponse.getBody(),
+                    PicklistEntries.class
+                );
+                // Cache entries
+                uiApiCache.put(requestUrl, entries);
+            } else {
+                System.debug(
+                    'HTTP ' +
+                    httpResponse.getStatusCode() +
+                    ' while calling UI API, Response ' +
+                    httpResponse.getBody()
+                );
+                throw new CalloutException(httpResponse.getBody());
+            }
+        } catch (System.Exception e) {
+            System.debug('ERROR: ' + e);
+            throw e;
+        }
+
+        return entries;
+    }
+
 
     public Boolean setRecordCounts() {
         for (Data_Dictionary_Field__c ddf : records) {
@@ -53,7 +147,7 @@ public with sharing class ddFieldList {
     }
 
 
-    public String Save() {
+    public String save() {
         try {
             upsert this.fieldList;
             return 'success';

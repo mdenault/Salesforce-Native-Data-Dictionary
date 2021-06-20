@@ -25,10 +25,6 @@ public inherited sharing class ddObject {
         return record;
     }
 
-    private static String formatDateTime(String utcDate){
-    	return utcDate.replace('T', ' ');
-    }
-
     public ddObject() {
         this.ddo = new Data_Dictionary_Object__c();
     }
@@ -126,7 +122,7 @@ public inherited sharing class ddObject {
                 this.ddo.Description__c = (String)ToolingMap.get('Description');
             }
             if (ToolingMap.containsKey('CreatedDate')) {
-                this.ddo.Metadata_Created_Date__c = Datetime.valueOf(formatDateTime((String)ToolingMap.get('CreatedDate')));
+                this.ddo.Metadata_Created_Date__c = Datetime.valueOf(ddCoreService.formatDateTime((String)ToolingMap.get('CreatedDate')));
             }
             if (ToolingMap.containsKey('CreatedById')) {
                 this.ddo.Metadata_Created_by__c = (String)ToolingMap.get('CreatedById');
@@ -319,28 +315,42 @@ public inherited sharing class ddObject {
             }
         }
 
-        this.ddo.Permission_Sets_Create__c = objPermsCreate;
-        this.ddo.Permission_Sets_Read__c = objPermsRead;
-        this.ddo.Permission_Sets_Edit__c = objPermsEdit;
-        this.ddo.Permission_Sets_Delete__c = objPermsDelete;
-        this.ddo.Permission_Sets_View_All__c = objPermsModAll;
-        this.ddo.Permission_Sets_Modify_All__c = objPermsViewAll;
+        Integer pMax = 20000;
 
-        this.ddo.Permission_Set_Groups_Create__c =  objPermGroupsCreate;
-        this.ddo.Permission_Set_Groups_Read__c = objPermGroupsRead;
-        this.ddo.Permission_Set_Groups_Edit__c = objPermGroupsEdit;
-        this.ddo.Permission_Set_Groups_Delete__c = objPermGroupsDelete;
-        this.ddo.Permission_Set_Groups_View_All__c = objPermGroupsModAll;
-        this.ddo.Permission_Set_Groups_Modify_All__c = objPermGroupsViewAll;
+        this.ddo.Permission_Sets_Create__c = objPermsCreate.left(pMax);
+        this.ddo.Permission_Sets_Read__c = objPermsRead.left(pMax);
+        this.ddo.Permission_Sets_Edit__c = objPermsEdit.left(pMax);
+        this.ddo.Permission_Sets_Delete__c = objPermsDelete.left(pMax);
+        this.ddo.Permission_Sets_View_All__c = objPermsModAll.left(pMax);
+        this.ddo.Permission_Sets_Modify_All__c = objPermsViewAll.left(pMax);
 
-        this.ddo.Profiles_Create__c = objProfilesCreate;
-        this.ddo.Profiles_Read__c = objProfilesRead;
-        this.ddo.Profiles_Edit__c = objProfilesEdit;
-        this.ddo.Profiles_Delete__c = objProfilesDelete;
-        this.ddo.Profiles_View_All__c = objProfilesViewAll;
-        this.ddo.Profiles_Modify_All__c = objProfilesModAll;
+        this.ddo.Permission_Set_Groups_Create__c =  objPermGroupsCreate.left(pMax);
+        this.ddo.Permission_Set_Groups_Read__c = objPermGroupsRead.left(pMax);
+        this.ddo.Permission_Set_Groups_Edit__c = objPermGroupsEdit.left(pMax);
+        this.ddo.Permission_Set_Groups_Delete__c = objPermGroupsDelete.left(pMax);
+        this.ddo.Permission_Set_Groups_View_All__c = objPermGroupsModAll.left(pMax);
+        this.ddo.Permission_Set_Groups_Modify_All__c = objPermGroupsViewAll.left(pMax);
+
+        pMax = 10000;
+
+        this.ddo.Profiles_Create__c = objProfilesCreate.left(pMax);
+        this.ddo.Profiles_Read__c = objProfilesRead.left(pMax);
+        this.ddo.Profiles_Edit__c = objProfilesEdit.left(pMax);
+        this.ddo.Profiles_Delete__c = objProfilesDelete.left(pMax);
+        this.ddo.Profiles_View_All__c = objProfilesViewAll.left(pMax);
+        this.ddo.Profiles_Modify_All__c = objProfilesModAll.left(pMax);
 
         return true;
+    }
+
+    public static String permVal(String s, Integer max) {
+        if (s.length() >= max) {
+            String message = '{Too many to list}';
+            s = s.left(max - message.length());
+            s = s + message;
+        }
+
+        return s;
     }
 
     public String Save() {

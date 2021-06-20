@@ -49,15 +49,13 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
                 ddf.updateFieldMap();
                 ddf.fillFromDescribe();
                 ddf.fillCreateDates();
+                ddf.fillOwnership();
             } else if (this.mode == 'only-page-layouts') {
                 ddf.fillFromDDFs();
                 ddf.fillPageLayouts();
             } else if (this.mode == 'only-permissions') {
                 ddf.fillFromDDFs();
                 ddf.fillPermissions();
-            } else if (this.mode == 'only-create-dates') {
-                ddf.fillFromDDFs();
-                ddf.fillOwnership();
             } else if (this.mode == 'all') {
                 ddf.Fill();
             }
@@ -73,9 +71,6 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
                 Database.executeBatch(newBatch, 1);
             } else if (this.mode == 'only-page-layouts') {
                 ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName, 'only-permissions');
-                Database.executeBatch(newBatch, 1);
-            } else if (this.mode == 'only-permissions') {
-                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName, 'only-create-dates');
                 Database.executeBatch(newBatch, 1);
             }
 

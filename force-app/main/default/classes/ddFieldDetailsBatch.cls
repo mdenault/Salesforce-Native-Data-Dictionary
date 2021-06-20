@@ -30,23 +30,18 @@ public with sharing class ddFieldDetailsBatch implements Database.Batchable<SObj
             // Record counts
             query = 'SELECT Id, Data_Type__c, Data_Type_Details_Trunc__c, API_Name__c, Object__r.API_Name__c, Object__r.Has_Record_Types__c, Durable_ID__c, Usage_Count__c FROM Data_Dictionary_Field__c WHERE Status__c = \'' + ddCoreService.FIELD_STATUS_ACTIVE + '\' AND (Object__r.Type__c = \'' + ddCoreService.OBJECT_TYPE_STANDARDOBJECT + '\' OR Object__r.Type__c = \'' + ddCoreService.OBJECT_TYPE_CUSTOMOBJECT + '\') ORDER BY Name';
         }
-        
 
         return Database.getQueryLocator(query);
     }
 
     public void execute(Database.BatchableContext bc, List<Data_Dictionary_Field__c> records) {
-        for (Data_Dictionary_Field__c ddf : records) {
+        ddFieldList fieldList = new ddFieldList(records);
 
-
-            // Calculate dependecies (including use in reports)
-
-
-            // Get the most recent report last run date from any of those reports
-
+        if (this.mode == 'recordcounts') {
+            fieldList.setRecordCounts();
         }
 
-        update records;
+        fieldList.Save();
     }
 
     public void finish(Database.BatchableContext bc) {
