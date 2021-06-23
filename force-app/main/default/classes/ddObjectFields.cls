@@ -246,6 +246,8 @@ public with sharing class ddObjectFields {
         profilesMap = null;
         permGroupsMap = null;
 
+        Integer pMax = 20000;
+
         for (Data_Dictionary_Field__c ddfItem : this.fields) {
             // Empty out any existing data
             ddfItem.Permission_Set_Groups_Read__c = '';
@@ -256,27 +258,27 @@ public with sharing class ddObjectFields {
             ddfItem.Profiles_Edit__c = '';
 
             if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
-                ddfItem.Permission_Set_Groups_Read__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap'), '\n');
+                ddfItem.Permission_Set_Groups_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap'), '\n'), pMax);
             }
 
             if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
-                ddfItem.Permission_Set_Groups_Edit__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsEditMap'), '\n');
+                ddfItem.Permission_Set_Groups_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsEditMap'), '\n'), pMax);
             }
 
             if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
-                ddfItem.Permission_Sets_Read__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n');
+                ddfItem.Permission_Sets_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n'), pMax);
             }
 
             if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
-                ddfItem.Permission_Sets_Edit__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n');
+                ddfItem.Permission_Sets_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n'), pMax);
             }
 
             if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
-                ddfItem.Profiles_Read__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n');
+                ddfItem.Profiles_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n'), pMax);
             }
             
             if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
-                ddfItem.Profiles_Edit__c = String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n');
+                ddfItem.Profiles_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n'), pMax);
             }
 
             // Again, remove not-longer needed values to reduce heap usage
@@ -317,7 +319,7 @@ public with sharing class ddObjectFields {
         return true;
     }
 
-    public void SetFieldDefs() {
+    public void setFieldDefs() {
         if (this.fieldDefs == null || this.fieldDefs.size() == 0) {
             List<String> excludedFields = ddCoreService.getListFromSetting('Field_Names_to_Exclude__c', ddCoreService.getActiveSettings());
 
@@ -373,7 +375,7 @@ public with sharing class ddObjectFields {
                             pickField += pick.getLabel() + '\n';
                         }
                     }
-                    ddfItem.Picklist_Values_Simple__c = pickField;
+                    ddfItem.Picklist_Values_Simple__c = ddCoreService.longString(pickField, 20000);
                 }
 
                 // Dependent picklists
@@ -486,13 +488,9 @@ public with sharing class ddObjectFields {
     }
 
 
-    public String Save() {
-        try {
-            upsert this.fields;
-            return 'success';
-        } catch (Exception ex) {
-            return ex.getMessage();
-        }
+    public String save() {
+        upsert this.fields;
+        return 'success';
     }
 
 }

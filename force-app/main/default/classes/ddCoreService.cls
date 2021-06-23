@@ -24,6 +24,8 @@ public with sharing class ddCoreService {
     public static final List<String> FIELD_NAMES_NOTCOUNTABLE = new List<String>{'Id', 'CreatedDate', 'SystemModstamp'};
     public static final List<String> FIELD_TRUNCTYPES_PSEUDOCOUNTABLE = new List<String>{'Checkbox'};
 
+    public static final String STRING_TOO_LONG = '[MAX LENGTH REACHED]';
+
     public static String getUserSessionId() {
         return UserInfo.getSessionId();
     }
@@ -66,6 +68,16 @@ public with sharing class ddCoreService {
             ORDER BY MasterLabel
         ];
         return new Map<Id, PermissionSetGroup>(permGroups);
+    }
+
+    public static String longString(String s, Integer max) {
+        if (s != null && s.length() >= max) {
+            String message = STRING_TOO_LONG;
+            s = s.left(max - message.length());
+            s = s + message;
+        }
+
+        return s;
     }
 
     public static String httpGet(String endPoint, String method, String sessionId) {
@@ -149,7 +161,10 @@ public with sharing class ddCoreService {
             setting.Namespaces_to_Exclude__c = '';
             setting.Custom_Objects_to_Include__c = '';
             setting.Custom_Objects_to_Exclude__c = '';
-            setting.Custom_Metadata_Types_to_Include__c = 'None';
+
+            setting.Custom_Settings_to_Include__c = '';
+            setting.Custom_Metadata_Types_to_Include__c = '';
+
             setting.DDF_Fields_Exclude_from_Log__c = 'LastModifiedDate\nSystemModstamp\nLast_Processed__c\nData_Owner_Group_Name__c';
             setting.DDO_Fields_Exclude_from_Log__c = 'LastModifiedDate\nSystemModstamp\nLast_Processed__c';
             setting.Field_Names_to_Exclude__c = 'IsDeleted\nSystemModstamp\nLastViewedDate\nLastReferencedDate\nUserRecordAccessId\nSetupOwnerId';

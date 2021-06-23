@@ -18,11 +18,9 @@ public with sharing class ddObjectProcess implements System.Schedulable {
 
         // Get the raw list of all Entity Definitions
         List<EntityDefinition> entDefList = getRawEntityDefList();
-        System.debug('entDefList size 1 = ' + entDefList.size());
 
         // Filter out the ones we don't want
         entDefList = filterEntDefList(entDefList);
-        System.debug('entDefList size 2 = ' + entDefList.size());
 
         // Get a list of existing Data Dictionary Objects, to compare/contrast with
         List<String> ddoDurableIds = getDDODurableIds();
@@ -68,28 +66,33 @@ public with sharing class ddObjectProcess implements System.Schedulable {
         List<String> includeCustomObj = ddCoreService.getListFromSetting('Custom_Objects_to_Include__c', settings);
         List<String> excludeCustomObj = ddCoreService.getListFromSetting('Custom_Objects_to_Exclude__c', settings);
         List<String> includeCustomMeta = ddCoreService.getListFromSetting('Custom_Metadata_Types_to_Include__c', settings);
+        List<String> includeCustomSettings = ddCoreService.getListFromSetting('Custom_Settings_to_Include__c', settings);
+        List<String> excludeCustomObjNamespaces = ddCoreService.getListFromSetting('Namespaces_to_Exclude__c', settings);
 
         for (EntityDefinition entDef: entDefs) {
-            // First the basics -- weed out the standard objects we definitely don't want
-            if ((!entDef.QualifiedApiName.containsIgnoreCase('history') && !entDef.QualifiedApiName.containsIgnoreCase('tag') && !entDef.QualifiedApiName.containsIgnoreCase('share') && !entDef.QualifiedApiName.containsIgnoreCase('feed')) || entDef.QualifiedApiName.toLowerCase().right(3) ==  '__c') {
-                // Now check our list of includes and excludes
-                // TODO: need to account better for custom settings, metadata, platform events, etc.
-                if ((includeStandardObj.isEmpty() && entDef.QualifiedApiName.toLowerCase().right(3) !=  '__c') || includeStandardObj.contains(entDef.QualifiedApiName)) {
-                    returnList.add(entDef);
-                }
-                if ((includeCustomObj.isEmpty() && entDef.QualifiedApiName.toLowerCase().right(3) ==  '__c') || includeCustomObj.contains(entDef.QualifiedApiName)) {
-                    returnList.add(entDef);
-                }
-                if ((includeCustomObj.isEmpty() && entDef.QualifiedApiName.toLowerCase().right(3) ==  '__b')) {
-                    returnList.add(entDef);
-                }
-                if ((includeCustomObj.isEmpty() && entDef.QualifiedApiName.toLowerCase().right(3) ==  '__e')) {
-                    returnList.add(entDef);
-                }
-                if ((includeCustomMeta.isEmpty() && entDef.QualifiedApiName.toLowerCase().right(5) ==  '__mdt') || includeCustomMeta.contains(entDef.QualifiedApiName)) {
+            // Standard objects -- only include those specifically listed
+            if (includeStandardObj.contains(entDef.QualifiedApiName)) {
+                returnList.add(entDef);
+            }
+
+            // Custom objects, including big objects and external objects -- include by default unless excluded explicitly or by namespace
+            if (entDef.IsCustomSetting == false && (entDef.QualifiedApiName.toLowerCase().right(3) ==  '__c' || entDef.QualifiedApiName.toLowerCase().right(3) ==  '__b' || entDef.QualifiedApiName.toLowerCase().right(3) ==  '__x' || entDef.QualifiedApiName.toLowerCase().right(5) ==  '__kav')) {
+                if (includeCustomObj.contains(entDef.QualifiedApiName) || (excludeCustomObjNamespaces.contains(entDef.NamespacePrefix) == false && excludeCustomObj.contains(entDef.QualifiedApiName) == false)) {
                     returnList.add(entDef);
                 }
             }
+
+            // Custom settings -- include by default, or only those listed
+            if (entDef.IsCustomSetting == true && (includeCustomSettings.isEmpty() || includeCustomSettings.contains(entDef.QualifiedApiName))) {
+                returnList.add(entDef);
+            }
+
+            // Custom metadata types -- include by default, or only those listed
+            if (entDef.QualifiedApiName.toLowerCase().right(5) ==  '__mdt' && (includeCustomMeta.isEmpty() || includeCustomMeta.contains(entDef.QualifiedApiName))) {
+                returnList.add(entDef);
+            }
+
+            // TODO: Consider adding platform events--just not sure if they fit the remit of this app
         }
 
         return returnList;
@@ -103,7 +106,7 @@ public with sharing class ddObjectProcess implements System.Schedulable {
         // EntityDefinition doesn't support QueryMore so a maximum of 200 can be returned per query.
         // We also have the concern that the maximum offet allowed by SOQL is 2000 but the maximum
         // number of custom objects is 3000. So we can't just use a numeric offset here, instead we
-        // need to sort and use a dynamic WHERE clause to chunk the entities safely.
+        // need to use a dynamic WHERE clause to chunk the entities safely.
         while (done == false) {
             String query = 'SELECT DurableId, DeveloperName, IsCustomSetting, KeyPrefix, NamespacePrefix, Label, QualifiedApiName, LastModifiedById, LastModifiedDate, PluralLabel, InternalSharingModel, ExternalSharingModel';
             query += ' FROM EntityDefinition';
@@ -113,11 +116,8 @@ public with sharing class ddObjectProcess implements System.Schedulable {
             query += ' ORDER BY DurableId ASC';
             query += ' LIMIT 200';
 
-            System.debug(query);
-
             List<EntityDefinition> entDefs = Database.query(query);
             Integer retSize = entDefs.size();
-            System.debug('Return size = ' + String.valueOf(retSize));
             if (retSize > 0) {
                 returnSet.addAll(entDefs);
                 if (retSize == 200) {

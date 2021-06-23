@@ -313,68 +313,62 @@ public inherited sharing class ddObject {
                     objProfilesViewAll += profileName + '\n';
                 }
             }
+
+            objPerm = null;
         }
 
         Integer pMax = 20000;
 
-        this.ddo.Permission_Sets_Create__c = objPermsCreate.left(pMax);
-        this.ddo.Permission_Sets_Read__c = objPermsRead.left(pMax);
-        this.ddo.Permission_Sets_Edit__c = objPermsEdit.left(pMax);
-        this.ddo.Permission_Sets_Delete__c = objPermsDelete.left(pMax);
-        this.ddo.Permission_Sets_View_All__c = objPermsModAll.left(pMax);
-        this.ddo.Permission_Sets_Modify_All__c = objPermsViewAll.left(pMax);
+        this.ddo.Permission_Sets_Create__c = ddCoreService.longString(objPermsCreate, pMax);
+        this.ddo.Permission_Sets_Read__c = ddCoreService.longString(objPermsRead, pMax);
+        this.ddo.Permission_Sets_Edit__c = ddCoreService.longString(objPermsEdit, pMax);
+        this.ddo.Permission_Sets_Delete__c = ddCoreService.longString(objPermsDelete, pMax);
+        this.ddo.Permission_Sets_View_All__c = ddCoreService.longString(objPermsModAll, pMax);
+        this.ddo.Permission_Sets_Modify_All__c = ddCoreService.longString(objPermsViewAll, pMax);
 
-        this.ddo.Permission_Set_Groups_Create__c =  objPermGroupsCreate.left(pMax);
-        this.ddo.Permission_Set_Groups_Read__c = objPermGroupsRead.left(pMax);
-        this.ddo.Permission_Set_Groups_Edit__c = objPermGroupsEdit.left(pMax);
-        this.ddo.Permission_Set_Groups_Delete__c = objPermGroupsDelete.left(pMax);
-        this.ddo.Permission_Set_Groups_View_All__c = objPermGroupsModAll.left(pMax);
-        this.ddo.Permission_Set_Groups_Modify_All__c = objPermGroupsViewAll.left(pMax);
+        this.ddo.Permission_Set_Groups_Create__c = ddCoreService.longString(objPermGroupsCreate, pMax);
+        this.ddo.Permission_Set_Groups_Read__c = ddCoreService.longString(objPermGroupsRead, pMax);
+        this.ddo.Permission_Set_Groups_Edit__c = ddCoreService.longString(objPermGroupsEdit, pMax);
+        this.ddo.Permission_Set_Groups_Delete__c = ddCoreService.longString(objPermGroupsDelete, pMax);
+        this.ddo.Permission_Set_Groups_View_All__c = ddCoreService.longString(objPermGroupsModAll, pMax);
+        this.ddo.Permission_Set_Groups_Modify_All__c = ddCoreService.longString(objPermGroupsViewAll, pMax);
 
         pMax = 10000;
 
-        this.ddo.Profiles_Create__c = objProfilesCreate.left(pMax);
-        this.ddo.Profiles_Read__c = objProfilesRead.left(pMax);
-        this.ddo.Profiles_Edit__c = objProfilesEdit.left(pMax);
-        this.ddo.Profiles_Delete__c = objProfilesDelete.left(pMax);
-        this.ddo.Profiles_View_All__c = objProfilesViewAll.left(pMax);
-        this.ddo.Profiles_Modify_All__c = objProfilesModAll.left(pMax);
+        this.ddo.Profiles_Create__c = ddCoreService.longString(objProfilesCreate, pMax);
+        this.ddo.Profiles_Read__c = ddCoreService.longString(objProfilesRead, pMax);
+        this.ddo.Profiles_Edit__c = ddCoreService.longString(objProfilesEdit, pMax);
+        this.ddo.Profiles_Delete__c = ddCoreService.longString(objProfilesDelete, pMax);
+        this.ddo.Profiles_View_All__c = ddCoreService.longString(objProfilesViewAll, pMax);
+        this.ddo.Profiles_Modify_All__c = ddCoreService.longString(objProfilesModAll, pMax);
+
+        objPermsCreate = null;
+        objPermsRead = null;
+        objPermsEdit = null;
+        objPermsDelete = null;
+        objPermsModAll = null;
+        objPermsViewAll = null;
+
+        objPermGroupsCreate = null;
+        objPermGroupsRead = null;
+        objPermGroupsEdit = null;
+        objPermGroupsDelete = null;
+        objPermGroupsModAll = null;
+        objPermGroupsViewAll = null;
+
+        objProfilesCreate = null;
+        objProfilesRead = null;
+        objProfilesEdit = null;
+        objProfilesDelete = null;
+        objProfilesModAll = null;
+        objProfilesViewAll = null;
 
         return true;
     }
 
-    public static String permVal(String s, Integer max) {
-        if (s.length() >= max) {
-            String message = '{Too many to list}';
-            s = s.left(max - message.length());
-            s = s + message;
-        }
-
-        return s;
-    }
-
     public String Save() {
-        try {
-            upsert ddo;
-            return 'success';
-        } catch (Exception ex) {
-            return ex.getMessage();
-        }
-    }
-
-    public class ddReturnDef {
-        Boolean success;
-        String message;
-
-        public ddReturnDef(Boolean success, String message) {
-            this.success = success;
-            this.message = message;
-        }
-
-        public ddReturnDef(Boolean success) {
-            this.success = success;
-            this.message = null;
-        }
+        upsert ddo;
+        return 'success';
     }
 
 }

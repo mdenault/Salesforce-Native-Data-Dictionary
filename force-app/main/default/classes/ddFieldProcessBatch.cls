@@ -1,30 +1,29 @@
 public with sharing class ddFieldProcessBatch implements Database.Batchable<SObject>, Database.AllowsCallouts {
 
     private String mode;
-    // TODO: maybe durableID would be better, because there can be duplicats of an object API name
-    private String objectApiName;
+    private String objectDurableId;
 
     public ddFieldProcessBatch() {
-        this.objectApiName = null;
+        this.objectDurableId = null;
         this.mode = 'only-basics';
     }
 
     public ddFieldProcessBatch(String mode) {
-        this.objectApiName = null;
+        this.objectDurableId = null;
         this.mode = mode;
     }
 
-    public ddFieldProcessBatch(String apiName, String mode) {
-        this.objectApiName = apiName;
+    public ddFieldProcessBatch(String objectDurableId, String mode) {
+        this.objectDurableId = objectDurableId;
         this.mode = mode;
     }
 
     public List<SObject> start(Database.BatchableContext bc) {
-        if (String.isNotEmpty(this.objectApiName)) {
+        if (String.isNotEmpty(this.objectDurableId)) {
             return [
                 SELECT Id, Durable_ID__c, API_Name__c
                 FROM Data_Dictionary_Object__c
-                WHERE API_Name__c = :this.objectApiName
+                WHERE Durable_ID__c = :this.objectDurableId
                 LIMIT 1];
         } else {
             return [
@@ -56,8 +55,6 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
             } else if (this.mode == 'only-permissions') {
                 ddf.fillFromDDFs();
                 ddf.fillPermissions();
-            } else if (this.mode == 'all') {
-                ddf.Fill();
             }
 
             ddf.Save();
@@ -67,10 +64,10 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
     public void finish(Database.BatchableContext bc) {
         if (Test.isRunningTest() == false) {
             if (this.mode == 'only-basics') {
-                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName , 'only-page-layouts');
+                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectDurableId , 'only-page-layouts');
                 Database.executeBatch(newBatch, 1);
             } else if (this.mode == 'only-page-layouts') {
-                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectApiName, 'only-permissions');
+                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectDurableId, 'only-permissions');
                 Database.executeBatch(newBatch, 1);
             }
 

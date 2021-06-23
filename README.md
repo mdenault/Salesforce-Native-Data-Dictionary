@@ -69,7 +69,7 @@ There is an App ("Data Dictionary") that you can grant access to via Setup > Man
 
 Depending on the complexity of your org, and how busy it and its infrastructure are at the moment, a run of the tool to populate data can take anywhere from 10 minutes to several hours.
 
-Initiate a test run by opening the Developer Console and executing the following anonymous Apex:
+Initiate a test run by executing the following anonymous Apex:
 
 ```
 ddObjectProcess ddproc = new ddObjectProcess();

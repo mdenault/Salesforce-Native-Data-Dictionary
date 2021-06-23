@@ -1,22 +1,22 @@
 public with sharing class ddObjectProcessBatch implements Database.Batchable<SObject>, Database.AllowsCallouts {
 
-    // Setting an API Name will process just that object; otherwise all objects will be processed
-    private String apiName;
+    // Setting a Durable ID will process just that object; otherwise all objects will be processed
+    private String durableId;
 
-    public ddObjectProcessBatch(String apiName) {
-        this.apiName = apiName;
+    public ddObjectProcessBatch(String durableId) {
+        this.durableId = durableId;
     }
 
     public ddObjectProcessBatch() {
-        this.apiName = null;
+        this.durableId = null;
     }
 
     public List<SObject> start(Database.BatchableContext bc) {
-        if (String.isNotEmpty(this.apiName)) {
+        if (String.isNotEmpty(this.durableId)) {
             return [
                 SELECT Id, Durable_ID__c
                 FROM Data_Dictionary_Object__c
-                WHERE API_Name__c = :this.apiName
+                WHERE Durable_ID__c = :this.durableId
                 LIMIT 1];
         } else {
             return [
@@ -37,7 +37,7 @@ public with sharing class ddObjectProcessBatch implements Database.Batchable<SOb
 
     public void finish(Database.BatchableContext bc) {
         if (Test.isRunningTest() == false) {
-            ddFieldProcessBatch ddfb = new ddFieldProcessBatch(this.apiName, 'only-basics');
+            ddFieldProcessBatch ddfb = new ddFieldProcessBatch(this.durableId, 'only-basics');
             Database.executeBatch(ddfb, 1);
         }
     }
