@@ -3,7 +3,7 @@
     <fullName>Permission_Sets_Read__c</fullName>
     <externalId>false</externalId>
     <label>Permission Sets (Read)</label>
-    <length>10000</length>
+    <length>20000</length>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>LongTextArea</type>

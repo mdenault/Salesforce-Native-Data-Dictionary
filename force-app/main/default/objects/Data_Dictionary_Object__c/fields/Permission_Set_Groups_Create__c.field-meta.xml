@@ -3,7 +3,7 @@
     <fullName>Permission_Set_Groups_Create__c</fullName>
     <externalId>false</externalId>
     <label>Permission Set Groups (Create)</label>
-    <length>10000</length>
+    <length>20000</length>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>LongTextArea</type>
