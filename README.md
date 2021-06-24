@@ -55,9 +55,9 @@ The main changes you will want to make here are what objects to include or exclu
 
 - **Standard Objects** must be listed (by API Name) to be included. A selection of the most common are listed by default.
 - **Custom Objects, including Big Objects and External Objects** are included by default, unless they are 1) listed in "Custom Objects to Exclude" or 2) part of a namespace listed in "Namespaces to Exclude" and not explicitly listed in "Custom Objects to Include."
-- **Custom Settings and Custom Metadata Types** are excluded by default, and must be listed to be included.
+- **Custom Settings and Custom Metadata Types** are all included if these fields are left empty; but if you explicitly list *any* to be included, then *only* those will be included. You can thus exclude all by simply writing "None" in these fields.
 
-The other settings here deal with system fields to exclude from the Dictionary, and internal fields on the Data Dictionary Object and Field objects that should not trigger Change Log entries.
+The other settings here deal with system fields to exclude from the Dictionary, and internal fields on the Data Dictionary Object and Field objects that should not trigger Change Log entries. Unlike the above settings, it's quite likely you won't need to make any changes to these.
 
 ### Assign permissions
 

@@ -82,13 +82,13 @@ public with sharing class ddObjectProcess implements System.Schedulable {
                 }
             }
 
-            // Custom settings -- include by default, or only those listed
-            if (entDef.IsCustomSetting == true && (includeCustomSettings.isEmpty() || includeCustomSettings.contains(entDef.QualifiedApiName))) {
+            // Custom settings -- include by default except excluded namespaces, or include only those listed
+            if (entDef.IsCustomSetting == true && ((includeCustomSettings.isEmpty() && excludeCustomObjNamespaces.contains(entDef.NamespacePrefix) == false) || includeCustomSettings.contains(entDef.QualifiedApiName))) {
                 returnList.add(entDef);
             }
 
-            // Custom metadata types -- include by default, or only those listed
-            if (entDef.QualifiedApiName.toLowerCase().right(5) ==  '__mdt' && (includeCustomMeta.isEmpty() || includeCustomMeta.contains(entDef.QualifiedApiName))) {
+            // Custom metadata types -- include by default except excluded namespaces, or include only those listed
+            if (entDef.QualifiedApiName.toLowerCase().right(5) ==  '__mdt' && ((includeCustomMeta.isEmpty() && excludeCustomObjNamespaces.contains(entDef.NamespacePrefix) == false) || includeCustomMeta.contains(entDef.QualifiedApiName))) {
                 returnList.add(entDef);
             }
 

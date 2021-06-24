@@ -17,25 +17,26 @@ public with sharing class ddObjectFields {
         this.newList = new List<String>();
     }
 
-    public Boolean SetObjectId(Id idVal) {
+    public Boolean setObjectId(Id idVal) {
         // TODO: validate idVal
         this.ddo.Id = idVal;
         
         return true;
     }
 
-    public Boolean SetObjectAPIName(String apiName) {
+    public Boolean setObjectAPIName(String apiName) {
         this.ddo.API_Name__c = apiName;
         
         return true;
     }
 
-    public Boolean SetObjectDurableId(String durableId) {
+    public Boolean setObjectDurableId(String durableId) {
         this.ddo.Durable_ID__c = durableId;
 
         return true;
     }
 
+    /*
     public Boolean Fill() {
         this.fillFromDDFs();
         this.fillFromFieldDefs();
@@ -50,6 +51,7 @@ public with sharing class ddObjectFields {
 
         return true;
     }
+    */
 
     public Boolean fillFromDDFs() {
         // Get the Data Dictionary data
@@ -94,6 +96,8 @@ public with sharing class ddObjectFields {
                 'q=' + EncodingUtil.urlEncode('SELECT DeveloperName, CreatedDate, CreatedById FROM CustomField WHERE DeveloperName IN ' + fieldList + ' AND TableEnumOrId = \'' + this.ddo.Durable_ID__c + '\'', 'UTF-8'),
                 'GET', ddCoreService.GetUserSessionId());
 
+            System.debug(body);
+
             Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(body);
             data = (List<Object>)responseMap.get('records');
         }
@@ -110,7 +114,7 @@ public with sharing class ddObjectFields {
                 for (Data_Dictionary_Field__c ddfItem : this.fields) {
                     if (ddfItem.API_Name__c.endsWithIgnoreCase('__c') && ddfItem.API_Name__c.removeEndIgnoreCase('__c') == (String)record.get('DeveloperName')) {
                         if (record.containsKey('CreatedDate')) {
-                            ddfItem.Field_Created_Date__c = Datetime.valueOf(ddCoreService.formatDateTime((String)record.get('CreatedDate')));
+                            ddfItem.Field_Created_Date__c = Datetime.valueOfGmt(ddCoreService.formatDateTime((String)record.get('CreatedDate')));
                         }
                         if (record.containsKey('CreatedById')) {
                             ddfItem.Field_Created_by__c = (String)record.get('CreatedById');
@@ -424,15 +428,9 @@ public with sharing class ddObjectFields {
         for (FieldDefinition fd : this.fieldDefs) {
             Data_Dictionary_Field__c ddfItem = new Data_Dictionary_Field__c();
 
-            // fieldPos is the postion in this.fields of this field; we'll use it later on to substitute
-            // the updated
-            Integer fieldPos = -1;
-
             for (Data_Dictionary_Field__c ddf : this.fields) {
                 if (fd.DurableId.equals(ddf.Durable_ID__c)) {
                     ddfItem = this.fields.get(this.fields.indexOf(ddf));
-                    // ddfItem.Id = ddf.Id;
-                    // fieldPos = this.fields.indexOf(ddf);
                     break;
                 }
             }
@@ -470,9 +468,8 @@ public with sharing class ddObjectFields {
 
             Datetime curDateTime = Datetime.now();
 
-            if (ddfItem.Id != null) { // (fieldPos > -1) {
+            if (ddfItem.Id != null) {
                 ddfItem.Last_Processed__c = curDateTime;
-                // this.fields.set(fieldPos, ddfItem);
             } else {
                 ddfItem.Object__c = this.ddo.Id;
                 ddfItem.First_Sync__c = curDateTime;

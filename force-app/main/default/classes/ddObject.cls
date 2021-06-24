@@ -122,7 +122,7 @@ public inherited sharing class ddObject {
                 this.ddo.Description__c = (String)ToolingMap.get('Description');
             }
             if (ToolingMap.containsKey('CreatedDate')) {
-                this.ddo.Metadata_Created_Date__c = Datetime.valueOf(ddCoreService.formatDateTime((String)ToolingMap.get('CreatedDate')));
+                this.ddo.Metadata_Created_Date__c = Datetime.valueOfGmt(ddCoreService.formatDateTime((String)ToolingMap.get('CreatedDate')));
             }
             if (ToolingMap.containsKey('CreatedById')) {
                 this.ddo.Metadata_Created_by__c = (String)ToolingMap.get('CreatedById');
@@ -181,6 +181,7 @@ public inherited sharing class ddObject {
 
     public Boolean FillRecordCounts() {
         // Total Record Count
+        // TODO: check if this works for custom settings/metadata/etc.
         if (this.ddo.Type__c == ddCoreService.OBJECT_TYPE_STANDARDOBJECT || this.ddo.Type__c == ddCoreService.OBJECT_TYPE_CUSTOMOBJECT) {
             String countQuery = 'SELECT COUNT() FROM ' + this.ddo.API_Name__c;
             Integer recordCount = Database.countQuery(countQuery);
