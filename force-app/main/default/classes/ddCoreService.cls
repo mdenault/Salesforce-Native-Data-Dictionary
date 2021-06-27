@@ -153,11 +153,11 @@ public with sharing class ddCoreService {
             FROM Data_Dictionary_Setting__mdt
             WHERE MasterLabel = 'Active'
         ];
-        if (mdtSettings.size() > 0) {
+        if (mdtSettings.size() > 0 && Test.isRunningTest() == false) {
             setting = mdtSettings[0];
         } else {
             setting.Tooling_API_Version__c = 'v51.0';
-            setting.Standard_Objects_to_Include__c = 'Account\nCampaign\nCampaignMember\nCase\nContact\nOpportunity\nProduct2';
+            setting.Standard_Objects_to_Include__c = 'Account\nCampaign\nCampaignMember\nCase\nContact\nLead\nOpportunity\nProduct2';
             setting.Namespaces_to_Exclude__c = '';
             setting.Custom_Objects_to_Include__c = '';
             setting.Custom_Objects_to_Exclude__c = '';

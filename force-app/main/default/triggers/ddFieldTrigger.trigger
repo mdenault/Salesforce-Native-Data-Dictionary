@@ -22,8 +22,8 @@ trigger ddFieldTrigger on Data_Dictionary_Field__c (after update) {
                 log.Field__c = ddfRecord.Id;
                 log.Object__c = ddfRecord.Object__c;
                 log.Element__c = fieldsMap.get(field).getDescribe().getLabel();
-                log.Prior_Value__c = String.valueOf(trigger.oldMap.get(ddfRecord.Id).get(field));
-                log.New_Value__c = String.valueOf(trigger.newMap.get(ddfRecord.Id).get(field));
+                log.Prior_Value__c = ddCoreService.longString(String.valueOf(trigger.oldMap.get(ddfRecord.Id).get(field)), 131072);
+                log.New_Value__c = ddCoreService.longString(String.valueOf(trigger.newMap.get(ddfRecord.Id).get(field)), 131072);
                 logList.add(log);
             }
         }

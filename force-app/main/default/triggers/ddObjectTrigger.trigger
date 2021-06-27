@@ -14,8 +14,8 @@ trigger ddObjectTrigger on Data_Dictionary_Object__c (after update) {
                     Data_Dictionary_Change_Log__c log = new Data_Dictionary_Change_Log__c();
                     log.Object__c = ddoRecord.Id;
                     log.Element__c = fieldsMap.get(field).getDescribe().getLabel();
-                    log.Prior_Value__c = String.valueOf(trigger.oldMap.get(ddoRecord.Id).get(field));
-                    log.New_Value__c = String.valueOf(trigger.newMap.get(ddoRecord.Id).get(field));
+                    log.Prior_Value__c = ddCoreService.longString(String.valueOf(trigger.oldMap.get(ddoRecord.Id).get(field)), 131072);
+                    log.New_Value__c = ddCoreService.longString(String.valueOf(trigger.newMap.get(ddoRecord.Id).get(field)), 131072);
                     logList.add(log);
                 }
             }

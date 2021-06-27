@@ -29,8 +29,8 @@ public with sharing class ddObjectProcess implements System.Schedulable {
         for (EntityDefinition entDef : entDefList) {
             if (ddoDurableIds.contains(entDef.DurableId) == false) {
                 ddObject ddoSetup = new ddObject();
-                ddoSetup.CreateStubFromEntityDef(entDef);
-                Data_Dictionary_Object__c ddoNew = ddoSetup.GetDDO();
+                ddoSetup.createStubFromEntityDef(entDef);
+                Data_Dictionary_Object__c ddoNew = ddoSetup.getDDO();
                 newDataObjects.add(ddoNew);
             }
         }
@@ -62,33 +62,41 @@ public with sharing class ddObjectProcess implements System.Schedulable {
 
         Data_Dictionary_Setting__mdt settings = ddCoreService.getActiveSettings();
 
-        List<String> includeStandardObj = ddCoreService.getListFromSetting('Standard_Objects_to_Include__c', settings);
-        List<String> includeCustomObj = ddCoreService.getListFromSetting('Custom_Objects_to_Include__c', settings);
-        List<String> excludeCustomObj = ddCoreService.getListFromSetting('Custom_Objects_to_Exclude__c', settings);
-        List<String> includeCustomMeta = ddCoreService.getListFromSetting('Custom_Metadata_Types_to_Include__c', settings);
-        List<String> includeCustomSettings = ddCoreService.getListFromSetting('Custom_Settings_to_Include__c', settings);
-        List<String> excludeCustomObjNamespaces = ddCoreService.getListFromSetting('Namespaces_to_Exclude__c', settings);
+        List<String> includeStandardObj = ddCoreService.lowercaseList(ddCoreService.getListFromSetting('Standard_Objects_to_Include__c', settings));
+        List<String> includeCustomObj = ddCoreService.lowercaseList(ddCoreService.getListFromSetting('Custom_Objects_to_Include__c', settings));
+        List<String> excludeCustomObj = ddCoreService.lowercaseList(ddCoreService.getListFromSetting('Custom_Objects_to_Exclude__c', settings));
+        List<String> includeCustomMeta = ddCoreService.lowercaseList(ddCoreService.getListFromSetting('Custom_Metadata_Types_to_Include__c', settings));
+        List<String> includeCustomSettings = ddCoreService.lowercaseList(ddCoreService.getListFromSetting('Custom_Settings_to_Include__c', settings));
+        List<String> excludeCustomObjNamespaces = ddCoreService.lowercaseList(ddCoreService.getListFromSetting('Namespaces_to_Exclude__c', settings));
 
         for (EntityDefinition entDef: entDefs) {
+            String lcApiName = entDef.QualifiedApiName.toLowerCase();
+            // It makes the "if" conditions below significantly simpler if we have a fake namespace, because otherwise
+            // we have to worry about a null namespace actually being found in a null list of namespace exclusions.
+            String lcNamespace = 'This Is Not A Real Namespace';
+            if (String.isNotEmpty(entDef.NamespacePrefix)) {
+                lcNamespace = entDef.NamespacePrefix.toLowerCase();
+            }
+
             // Standard objects -- only include those specifically listed
-            if (includeStandardObj.contains(entDef.QualifiedApiName)) {
+            if (includeStandardObj.contains(lcApiName)) {
                 returnList.add(entDef);
             }
 
             // Custom objects, including big objects and external objects -- include by default unless excluded explicitly or by namespace
-            if (entDef.IsCustomSetting == false && (entDef.QualifiedApiName.toLowerCase().right(3) ==  '__c' || entDef.QualifiedApiName.toLowerCase().right(3) ==  '__b' || entDef.QualifiedApiName.toLowerCase().right(3) ==  '__x' || entDef.QualifiedApiName.toLowerCase().right(5) ==  '__kav')) {
-                if (includeCustomObj.contains(entDef.QualifiedApiName) || (excludeCustomObjNamespaces.contains(entDef.NamespacePrefix) == false && excludeCustomObj.contains(entDef.QualifiedApiName) == false)) {
+            if (entDef.IsCustomSetting == false && (lcApiName.right(3) ==  '__c' || lcApiName.right(3) ==  '__b' || lcApiName.right(3) ==  '__x' || lcApiName.right(5) ==  '__kav')) {
+                if (includeCustomObj.contains(lcApiName) || (excludeCustomObjNamespaces.contains(lcNamespace) == false && excludeCustomObj.contains(lcApiName) == false)) {
                     returnList.add(entDef);
                 }
             }
 
             // Custom settings -- include by default except excluded namespaces, or include only those listed
-            if (entDef.IsCustomSetting == true && ((includeCustomSettings.isEmpty() && excludeCustomObjNamespaces.contains(entDef.NamespacePrefix) == false) || includeCustomSettings.contains(entDef.QualifiedApiName))) {
+            if (entDef.IsCustomSetting == true && ((includeCustomSettings.isEmpty() && excludeCustomObjNamespaces.contains(lcNamespace) == false) || includeCustomSettings.contains(lcApiName))) {
                 returnList.add(entDef);
             }
 
             // Custom metadata types -- include by default except excluded namespaces, or include only those listed
-            if (entDef.QualifiedApiName.toLowerCase().right(5) ==  '__mdt' && ((includeCustomMeta.isEmpty() && excludeCustomObjNamespaces.contains(entDef.NamespacePrefix) == false) || includeCustomMeta.contains(entDef.QualifiedApiName))) {
+            if (lcApiName.right(5) ==  '__mdt' && ((includeCustomMeta.isEmpty() && excludeCustomObjNamespaces.contains(lcNamespace) == false) || includeCustomMeta.contains(lcApiName))) {
                 returnList.add(entDef);
             }
 

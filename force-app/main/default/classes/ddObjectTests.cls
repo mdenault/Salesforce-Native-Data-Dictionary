@@ -19,8 +19,11 @@ public with sharing class ddObjectTests {
         Test.stopTest();
 
         // Assertions
-        ddos = [SELECT Id, Durable_ID__c FROM Data_Dictionary_Object__c WHERE API_Name__c = 'Data_Dictionary_Field__c'];
+        ddos = [SELECT Id, Durable_ID__c, Type__c, Status__c FROM Data_Dictionary_Object__c WHERE API_Name__c = 'Data_Dictionary_Field__c'];
+
         System.assertEquals(1, ddos.size());
+        System.assertEquals(ddCoreService.OBJECT_TYPE_CUSTOMOBJECT, ddos[0].Type__c);
+        System.assertEquals(ddCoreService.OBJECT_STATUS_ACTIVE, ddos[0].Status__c);
 
     }
 
@@ -38,8 +41,16 @@ public with sharing class ddObjectTests {
 
         // Assertions
         ddos = [SELECT Id, Durable_ID__c FROM Data_Dictionary_Object__c WHERE API_Name__c = 'Contact'];
+
         System.assertEquals(1, ddos.size(), '');
+        System.assertEquals(ddCoreService.OBJECT_TYPE_STANDARDOBJECT, ddos[0].Type__c);
+        System.assertEquals(ddCoreService.OBJECT_STATUS_ACTIVE, ddos[0].Status__c);
     }
+
+
+
+
+
 
     @IsTest
     public static void testBatchCustomObjectFieldBasics() {
@@ -60,7 +71,9 @@ public with sharing class ddObjectTests {
         Database.executeBatch(ddfp, 1);
         Test.stopTest();
 
-        // TODO: asserts!
+        // Assertions
+
+
     }
 
     @IsTest

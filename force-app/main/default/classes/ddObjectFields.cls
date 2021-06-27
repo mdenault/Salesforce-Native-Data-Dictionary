@@ -17,43 +17,20 @@ public with sharing class ddObjectFields {
         this.newList = new List<String>();
     }
 
-    public Boolean setObjectId(Id idVal) {
+    public void setObjectId(Id idVal) {
         // TODO: validate idVal
         this.ddo.Id = idVal;
-        
-        return true;
     }
 
-    public Boolean setObjectAPIName(String apiName) {
+    public void setObjectAPIName(String apiName) {
         this.ddo.API_Name__c = apiName;
-        
-        return true;
     }
 
-    public Boolean setObjectDurableId(String durableId) {
+    public void setObjectDurableId(String durableId) {
         this.ddo.Durable_ID__c = durableId;
-
-        return true;
     }
 
-    /*
-    public Boolean Fill() {
-        this.fillFromDDFs();
-        this.fillFromFieldDefs();
-        this.updateFieldMap();
-        this.fillFromDescribe();
-        this.updateFieldMap();
-
-        this.fillCreateDates();
-        this.fillPermissions();
-        this.fillOwnership();
-        this.fillPageLayouts();
-
-        return true;
-    }
-    */
-
-    public Boolean fillFromDDFs() {
+    public void fillFromDDFs() {
         // Get the Data Dictionary data
         List<Data_Dictionary_Field__c> ddfList = [
             SELECT Id, Status__c, Durable_ID__c, Name, API_Name__c, Field_ID__c, Last_Processed__c, Help_Text__c, Description__c
@@ -64,8 +41,6 @@ public with sharing class ddObjectFields {
         this.fields = ddfList;
 
         this.updateFieldMap();
-
-        return true;
     }
 
     public void updateFieldMap() {
@@ -105,7 +80,7 @@ public with sharing class ddObjectFields {
         return data;
     }
 
-    public Boolean fillCreateDates() {
+    public void fillCreateDates() {
         if (this.newList != null && this.newList.size() > 0) {
             List<Object> toolingData = this.getCustomFieldToolingData();
             for (Object obj : toolingData) {
@@ -126,8 +101,6 @@ public with sharing class ddObjectFields {
                 record = null;
             }
         }
-
-        return true;
     }
 
     private Map<String, List<String>> getFieldLayoutMap() {
@@ -157,7 +130,7 @@ public with sharing class ddObjectFields {
         return fieldSections;
     }
 
-    public Boolean fillPageLayouts() {
+    public void fillPageLayouts() {
         Map<String, List<String>> fieldSections = getFieldLayoutMap();
 
         for (Data_Dictionary_Field__c ddfItem : this.fields) {
@@ -167,11 +140,9 @@ public with sharing class ddObjectFields {
             }
             ddfItem.Page_Layouts__c = fieldPageLayouts;
         }
-
-        return true;
     }
 
-    public Boolean fillPermissions() {
+    public void fillPermissions() {
         Map<Id, Profile> profilesMap = ddCoreService.getProfilesMap();
         Map<Id, PermissionSetGroup> permGroupsMap = ddCoreService.getPermGroupsMap();
 
@@ -288,11 +259,9 @@ public with sharing class ddObjectFields {
             // Again, remove not-longer needed values to reduce heap usage
             permMap.remove(ddfItem.API_Name__c);
         }
-
-        return true;
     }
 
-    public Boolean fillOwnership() {
+    public void fillOwnership() {
         this.SetFieldDefs();
         Map<Id, Group> publicGroupsMap = ddCoreService.getPublicGroupMap();
 
@@ -302,12 +271,12 @@ public with sharing class ddObjectFields {
                 if (fd.BusinessOwnerId != null) {
                     Schema.sObjectType entityType = fd.BusinessOwnerId.getSObjectType();
                     if (entityType == User.sObjectType) {
-                        System.debug('Owner is a user, ID ' + fd.BusinessOwnerId);
                         ddfItem.Data_Owner_User__c = fd.BusinessOwnerId;
                         ddfItem.Data_Owner_Group_Name__c = null;
                         ddfItem.Data_Owner_Group_ID__c = null;
                     } else {
-                        System.debug('Owner is a group, ID ' + fd.BusinessOwnerId);
+                        // Salesforce doesn't allow lookup fields to public groups so best to store the group name
+                        // and ID in separate fields.
                         ddfItem.Data_Owner_User__c = null;
                         ddfItem.Data_Owner_Group_Name__c = ddCoreService.getPublicGroupNameById(fd.BusinessOwnerId, publicGroupsMap);
                         ddfItem.Data_Owner_Group_ID__c = fd.BusinessOwnerId;
@@ -319,8 +288,6 @@ public with sharing class ddObjectFields {
                 }
             }
         }
-
-        return true;
     }
 
     public void setFieldDefs() {
@@ -339,7 +306,7 @@ public with sharing class ddObjectFields {
         }
     }
 
-    public Boolean fillFromDescribe() {
+    public void fillFromDescribe() {
         List<Schema.DescribeSobjectResult> results = Schema.describeSObjects(new List<String>{this.ddo.API_Name__c});
         Map<String, Schema.SObjectField> fieldDescMap = results[0].fields.getMap();
 
@@ -380,6 +347,7 @@ public with sharing class ddObjectFields {
                         }
                     }
                     ddfItem.Picklist_Values_Simple__c = ddCoreService.longString(pickField, 20000);
+                    ddfItem.Picklist_Values_All__c = ddCoreService.longString(JSON.serializePretty(picks), 40000);
                 }
 
                 // Dependent picklists
@@ -418,11 +386,9 @@ public with sharing class ddObjectFields {
 
             }
         }
-
-        return true;
     }
 
-    public Boolean fillFromFieldDefs() {
+    public void fillFromFieldDefs() {
         this.SetFieldDefs();
 
         for (FieldDefinition fd : this.fieldDefs) {
@@ -480,14 +446,11 @@ public with sharing class ddObjectFields {
         }
 
         // TODO: if there are fields that were not processed, they must have been deleted or are still draft
-
-        return true;
     }
 
 
-    public String save() {
+    public void save() {
         upsert this.fields;
-        return 'success';
     }
 
 }

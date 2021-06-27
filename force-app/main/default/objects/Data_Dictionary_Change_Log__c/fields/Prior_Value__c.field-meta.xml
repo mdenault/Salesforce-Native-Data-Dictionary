@@ -3,7 +3,7 @@
     <fullName>Prior_Value__c</fullName>
     <externalId>false</externalId>
     <label>Prior Value</label>
-    <length>32768</length>
+    <length>131072</length>
     <trackTrending>false</trackTrending>
     <type>LongTextArea</type>
     <visibleLines>5</visibleLines>

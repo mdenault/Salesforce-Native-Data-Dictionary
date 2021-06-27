@@ -3,6 +3,10 @@ public inherited sharing class ddObject {
     private Data_Dictionary_Object__c ddo;
     private List<String> messages;
 
+    // We store whether the object metadata record was updated mainly because if it hasn't, we can avoid making the
+    // callout to the tooling API to get an updated Description.
+    private Boolean metadataUpdated = false;
+
     public static Map<String, Object> GetCustomObjectToolingData(String QualifiedApiName) {
         Map<String, Object> record = new Map<String, Object>();
         String baseURL = URL.getSalesforceBaseUrl().toExternalForm();
@@ -10,12 +14,11 @@ public inherited sharing class ddObject {
         // TODO: check to see if custom metadata can be retrieved, too
         String DeveloperName = QualifiedApiName.removeEndIgnoreCase('__c').removeEndIgnoreCase('__b').removeEndIgnoreCase('__e');
 
-        // TODO: put Tooling API version in custom metadata?
         String body = ddCoreService.httpGet(baseURL +
-            '/services/data/v51.0/tooling/query?' +
+            '/services/data/' + ddCoreService.getActiveSettings().Tooling_API_Version__c + '/tooling/query?' +
             'q=' + EncodingUtil.urlEncode('SELECT Description, CreatedDate, CreatedById FROM CustomObject WHERE DeveloperName = \'' + DeveloperName + '\'', 'UTF-8'),
             'GET', ddCoreService.GetUserSessionId());
-   
+
         Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(body);
 
         List<Object> data = (List<Object>)responseMap.get('records');
@@ -35,21 +38,16 @@ public inherited sharing class ddObject {
         this.SetDurableId(durableId);
     }
 
-    public Data_Dictionary_Object__c GetDDO() {
+    public Data_Dictionary_Object__c getDDO() {
         return this.ddo;
     }
 
-    public Boolean SetId(Id idVal) {
-        // TODO: validate idVal
+    public void setId(Id idVal) {
         this.ddo.Id = idVal;
-        
-        return true;
     }
 
-    public Boolean SetDurableId(String durableId) {
+    public void setDurableId(String durableId) {
         this.ddo.Durable_ID__c = durableId;
-
-        return true;
     }
 
     public static String GetObjectTypeFromEntDef(EntityDefinition ed) {
@@ -62,8 +60,9 @@ public inherited sharing class ddObject {
             return ddCoreService.OBJECT_TYPE_CUSTOMOBJECT;
         } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__b') {
             return ddCoreService.OBJECT_TYPE_BIGOBJECT;
-        } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__e') {
-            return ddCoreService.OBJECT_TYPE_PLATFORMEVENT;
+        // If you want to keep platform events in the Data Dictionary, uncomment these lines
+        // } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__e') {
+        //     return ddCoreService.OBJECT_TYPE_PLATFORMEVENT;
         } else if (ed.QualifiedApiName.toLowerCase().right(3) ==  '__x') {
             return ddCoreService.OBJECT_TYPE_EXTERNALOBJECT;
         } else {
@@ -71,45 +70,40 @@ public inherited sharing class ddObject {
         }
     }
 
-    public Boolean CreateStubFromEntityDef(EntityDefinition ed) {
-        this.SetDurableId(ed.DurableId);
-        this.FillFromEntityDefProvided(ed);
+    public void createStubFromEntityDef(EntityDefinition ed) {
+        this.setDurableId(ed.DurableId);
+        this.fillFromEntityDefProvided(ed);
         this.ddo.Status__c = ddCoreService.OBJECT_STATUS_STUB;
         // TODO: Check to see if there is a Draft object
-
-        return true;
     }
 
-    public Boolean Fill() {
-        this.FillFromDDO();
-        this.FillFromEntityDef();
+    public void fill() {
+        this.fillFromDDO();
+        this.fillFromEntityDef();
         if (this.ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
-            this.FillFromTooling();
-            this.FillRecordTypes();
-            this.FillRecordCounts();           
-            this.FillPageLayouts();
-            this.FillPermissions();
+            if (this.metadataUpdated) {
+                this.fillFromTooling();
+            }
+            this.fillRecordTypes();
+            this.fillRecordCounts();           
+            this.fillPageLayouts();
+            this.fillPermissions();
         }
-
-        return true;
     }
 
-    public Boolean FillFromDDO() {
+    public void fillFromDDO() {
         // Get the Data Dictionary data
         List<Data_Dictionary_Object__c> ddoData = [
-            SELECT Id, Name, API_Name__c, Durable_ID__c, Last_Processed__c, Prefix__c, Status__c, Type__c, Metadata_Created_by__c, Metadata_Created_Date__c
+            SELECT Id, Name, API_Name__c, Durable_ID__c, Last_Processed__c, Prefix__c, Status__c, Type__c, Metadata_Created_by__c, Metadata_Created_Date__c, Metadata_Last_Modified_Date__c
             FROM Data_Dictionary_Object__c
             WHERE Id = :this.ddo.Id
         ];
         if (ddoData.size() == 1) {
             this.ddo = ddoData[0];
-            return true;
-        } else {
-            return false;
         }
     }
 
-    public Boolean FillFromTooling() {
+    public void fillFromTooling() {
         // Description, CreatedDate, CreatedBy -- all require tooling API
         this.ddo.Description__c = '';
         this.ddo.Metadata_Created_by__c = null;
@@ -128,22 +122,22 @@ public inherited sharing class ddObject {
                 this.ddo.Metadata_Created_by__c = (String)ToolingMap.get('CreatedById');
             }
         }
-        
-        return true;
     }
 
-    public Boolean FillFromEntityDefProvided(EntityDefinition ed) {
+    public void fillFromEntityDefProvided(EntityDefinition ed) {
         if (ed == null) {
             if (ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
                 ddo.Status__c = ddCoreService.OBJECT_STATUS_DELETED;
                 // TODO: clear other fields?
             }
         } else {
+            // Sync times
             if (this.ddo.Status__c == ddCoreService.OBJECT_STATUS_STUB) {
                 this.ddo.First_Sync__c = Datetime.now();
             }
             this.ddo.Last_Processed__c = Datetime.now();
 
+            // Basic info
             this.ddo.Status__c = ddCoreService.OBJECT_STATUS_ACTIVE;
             this.ddo.Name = ed.Label;
             this.ddo.API_Name__c = ed.QualifiedApiName;
@@ -152,18 +146,20 @@ public inherited sharing class ddObject {
             this.ddo.Durable_ID__c = ed.DurableId;
             this.ddo.Type__c = GetObjectTypeFromEntDef(ed);
 
+            // Last modified
+            if (this.ddo.Metadata_Last_Modified_Date__c != ed.LastModifiedDate) {
+                this.ddo.Metadata_Last_Modified_Date__c = ed.LastModifiedDate;
+                this.metadataUpdated = true;
+            }
             this.ddo.Metadata_Last_Modified_by__c = ed.LastModifiedById;
-            this.ddo.Metadata_Last_Modified_Date__c = ed.LastModifiedDate;
-
+            
             // Sharing
             this.ddo.Internal_Sharing_Model__c = ed.InternalSharingModel;
             this.ddo.External_Sharing_Model__c = ed.ExternalSharingModel;
         }
-
-        return true;
     }
 
-    public Boolean FillFromEntityDef() {
+    public void fillFromEntityDef() {
         // Get any EntityDefinition data
         List<EntityDefinition> entityData = [
             SELECT DeploymentStatus, DeveloperName, DurableId, QualifiedApiName, IsCustomSetting, KeyPrefix, Label, LastModifiedById, LastModifiedDate, NamespacePrefix, PluralLabel, ExternalSharingModel, InternalSharingModel
@@ -175,11 +171,9 @@ public inherited sharing class ddObject {
         } else {
             this.FillFromEntityDefProvided(null);
         }
-
-        return true;
     }
 
-    public Boolean FillRecordCounts() {
+    public void fillRecordCounts() {
         // Total Record Count
         // TODO: check if this works for custom settings/metadata/etc.
         if (this.ddo.Type__c == ddCoreService.OBJECT_TYPE_STANDARDOBJECT || this.ddo.Type__c == ddCoreService.OBJECT_TYPE_CUSTOMOBJECT) {
@@ -189,38 +183,40 @@ public inherited sharing class ddObject {
         } else {
             this.ddo.Record_Count__c = null;
         }
-
-        return true;
     }
 
-    public Boolean FillPageLayouts() {
+    public void fillPageLayouts() {
         List<String> pageLayoutList = ddCoreService.getPageLayoutNameListForObject(this.ddo.Durable_ID__c, this.ddo.API_Name__c, false);
         this.ddo.Page_Layouts__c = String.join(pageLayoutList, '\n');
-
-        return true;
     }
 
-    public Boolean FillRecordTypes() {
+    public void fillRecordTypes() {
         String recordTypeNames = '';
         List<RecordType> rTypes = [
-            SELECT Id, Name
+            SELECT Id, Name, DeveloperName, Description, IsActive, NamespacePrefix
             FROM RecordType
             WHERE SObjectType = :this.ddo.API_Name__c
+            ORDER BY Name
         ];
         if (rTypes.size() > 0) {
             this.ddo.Has_Record_Types__c = true;
+            // One dilemma here: if a record type is added by a namespaced package that has been set for
+            // exclusion, do we include it here? I think we should, and so have; but if you feel otherwise,
+            // you can add an exclusion here.
             for (RecordType rt : rTypes) {
-                recordTypeNames = recordTypeNames + '\n' + rt.Name;
+                if (rt.IsActive) {
+                    recordTypeNames = recordTypeNames + '\n' + rt.Name;
+                }
             }
+            this.ddo.Record_Types_Details__c = ddCoreService.longString(JSON.serializePretty(rTypes), 30000);
         } else {
             this.ddo.Has_Record_Types__c = false;
+            this.ddo.Record_Types_Details__c = '';
         }
         this.ddo.Record_Types__c = recordTypeNames;
-
-        return true;
     }
 
-    public Boolean FillPermissions() {
+    public void fillPermissions() {
         Map<Id, Profile> profilesMap = ddCoreService.getProfilesMap();
         Map<Id, PermissionSetGroup> permGroupsMap = ddCoreService.getPermGroupsMap();
 
@@ -363,13 +359,10 @@ public inherited sharing class ddObject {
         objProfilesDelete = null;
         objProfilesModAll = null;
         objProfilesViewAll = null;
-
-        return true;
     }
 
-    public String Save() {
+    public void save() {
         upsert ddo;
-        return 'success';
     }
 
 }
