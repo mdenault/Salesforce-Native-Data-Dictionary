@@ -81,7 +81,7 @@ public inherited sharing class ddObject {
         this.fillFromDDO();
         this.fillFromEntityDef();
         if (this.ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
-            if (this.metadataUpdated) {
+            if (this.metadataUpdated || Test.isRunningTest()) {
                 this.fillFromTooling();
             }
             this.fillRecordTypes();
@@ -167,9 +167,9 @@ public inherited sharing class ddObject {
             WHERE DurableId = :this.ddo.Durable_ID__c
         ];
         if (entityData.size() == 1) {
-            this.FillFromEntityDefProvided(entityData[0]);
+            this.fillFromEntityDefProvided(entityData[0]);
         } else {
-            this.FillFromEntityDefProvided(null);
+            this.fillFromEntityDefProvided(null);
         }
     }
 

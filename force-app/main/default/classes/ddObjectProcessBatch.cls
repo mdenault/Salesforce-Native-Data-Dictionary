@@ -30,8 +30,8 @@ public with sharing class ddObjectProcessBatch implements Database.Batchable<SOb
     public void execute(Database.BatchableContext bc, List<Data_Dictionary_Object__c> records) {
         for (Data_Dictionary_Object__c ddo : records) {
             ddObject ddoToProcess = new ddObject(ddo.Id, ddo.Durable_ID__c);
-            ddoToProcess.Fill();
-            ddoToProcess.Save();
+            ddoToProcess.fill();
+            ddoToProcess.save();
         }
     }
 
