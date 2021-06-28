@@ -157,7 +157,7 @@ public with sharing class ddObjectFields {
                 innerMap.put('fieldPermsReadMap', new List<String>());
                 innerMap.put('fieldPermsEditMap', new List<String>());
                 innerMap.put('fieldPermGroupsReadMap', new List<String>());
-                innerMap.put('fieldPermGroupsMap', new List<String>());
+                innerMap.put('fieldPermGroupsEditMap', new List<String>());
                 innerMap.put('fieldProfilesReadMap', new List<String>());
                 innerMap.put('fieldProfilesEditMap', new List<String>());
 
@@ -236,7 +236,7 @@ public with sharing class ddObjectFields {
                     ddfItem.Permission_Set_Groups_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap'), '\n'), pMax);
                 }
 
-                if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
+                if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsEditMap').size() > 0) {
                     ddfItem.Permission_Set_Groups_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsEditMap'), '\n'), pMax);
                 }
 
@@ -244,16 +244,16 @@ public with sharing class ddObjectFields {
                     ddfItem.Permission_Sets_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n'), pMax);
                 }
 
-                if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
-                    ddfItem.Permission_Sets_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n'), pMax);
+                if (permMap.get(ddfItem.API_Name__c).get('fieldPermsEditMap').size() > 0) {
+                    ddfItem.Permission_Sets_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsEditMap'), '\n'), pMax);
                 }
 
                 if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
                     ddfItem.Profiles_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n'), pMax);
                 }
                 
-                if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
-                    ddfItem.Profiles_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n'), pMax);
+                if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesEditMap').size() > 0) {
+                    ddfItem.Profiles_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesEditMap'), '\n'), pMax);
                 }
 
                 // Again, remove not-longer needed values to reduce heap usage

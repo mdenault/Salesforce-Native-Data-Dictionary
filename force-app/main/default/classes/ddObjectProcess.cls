@@ -25,11 +25,26 @@ public with sharing class ddObjectProcess implements System.Schedulable {
         // Get a list of existing Data Dictionary Objects, to compare/contrast with
         List<String> ddoDurableIds = getDDODurableIds();
 
+        // Check to see if there are any Draft objects
+        List<Data_Dictionary_Object__c> draftObjs = [
+            SELECT Id, API_Name__c
+            FROM Data_Dictionary_Object__c
+            WHERE Status__c = :ddCoreService.OBJECT_STATUS_DRAFT
+        ];
+
         // Create DDO records for any new Objects, or promote Draft records to Active
         for (EntityDefinition entDef : entDefList) {
             if (ddoDurableIds.contains(entDef.DurableId) == false) {
                 ddObject ddoSetup = new ddObject();
                 ddoSetup.createStubFromEntityDef(entDef);
+                if (draftObjs.size() > 0) {
+                    for (Data_Dictionary_Object__c draftObj : draftObjs) {
+                        if (draftObj.API_Name__c == entDef.QualifiedApiName) {
+                            ddoSetup.setId(draftObj.Id);
+                            break;
+                        }
+                    }
+                }
                 Data_Dictionary_Object__c ddoNew = ddoSetup.getDDO();
                 newDataObjects.add(ddoNew);
             }
