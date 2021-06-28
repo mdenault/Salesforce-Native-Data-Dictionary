@@ -21,13 +21,13 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
     public List<SObject> start(Database.BatchableContext bc) {
         if (String.isNotEmpty(this.objectDurableId)) {
             return [
-                SELECT Id, Durable_ID__c, API_Name__c
+                SELECT Id, Durable_ID__c, API_Name__c, Status__c
                 FROM Data_Dictionary_Object__c
                 WHERE Durable_ID__c = :this.objectDurableId
                 LIMIT 1];
         } else {
             return [
-                SELECT Id, Durable_ID__c, API_Name__c
+                SELECT Id, Durable_ID__c, API_Name__c, Status__c
                 FROM Data_Dictionary_Object__c
                 ORDER BY Name];
         }
@@ -46,18 +46,20 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
                 ddf.fillFromDDFs();
                 ddf.fillFromFieldDefs();
                 ddf.updateFieldMap();
-                ddf.fillFromDescribe();
-                ddf.fillCreateDates();
-                ddf.fillOwnership();
-            } else if (this.mode == 'only-page-layouts') {
+                if (ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
+                    ddf.fillFromDescribe();
+                    ddf.fillCreateDates();
+                    ddf.fillOwnership();
+                }
+            } else if (this.mode == 'only-page-layouts' && ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
                 ddf.fillFromDDFs();
                 ddf.fillPageLayouts();
-            } else if (this.mode == 'only-permissions') {
+            } else if (this.mode == 'only-permissions' && ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
                 ddf.fillFromDDFs();
                 ddf.fillPermissions();
             }
 
-            ddf.Save();
+            ddf.save();
         }
     }
 

@@ -74,7 +74,15 @@ public inherited sharing class ddObject {
         this.setDurableId(ed.DurableId);
         this.fillFromEntityDefProvided(ed);
         this.ddo.Status__c = ddCoreService.OBJECT_STATUS_STUB;
-        // TODO: Check to see if there is a Draft object
+        // Check to see if there is a Draft object
+        List<Data_Dictionary_Object__c> draftObjs = [
+            SELECT Id
+            FROM Data_Dictionary_Object__c
+            WHERE API_Name__c = :this.ddo.API_Name__c AND Status__c = :ddCoreService.OBJECT_STATUS_DRAFT
+        ];
+        if (draftObjs.size() == 1) {
+            this.setId(draftObjs[0].Id);
+        }
     }
 
     public void fill() {

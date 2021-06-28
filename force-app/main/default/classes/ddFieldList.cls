@@ -6,6 +6,14 @@ public with sharing class ddFieldList {
         this.fieldList = fieldList;
     }
 
+    public ddFieldList() {
+        this.fieldList = new List<Data_Dictionary_Field__c>();
+    }
+
+    public void addField(Data_Dictionary_Field__c field) {
+        this.fieldList.add(field);
+    }
+
     public static Map<Object, List<Schema.PicklistEntry>> getDependentPicklistValues(String sObjectName, String fieldName) {
         return getDependentPicklistValues(Schema.getGlobalDescribe().get(sObjectName).getDescribe().fields.getMap().get(fieldName));
     }
@@ -102,7 +110,7 @@ public with sharing class ddFieldList {
 
 
     public Boolean setRecordCounts() {
-        for (Data_Dictionary_Field__c ddf : records) {
+        for (Data_Dictionary_Field__c ddf : this.fieldList) {
             Integer totalUsage = null;
             Map<Id, Integer> usageMapById = new Map<Id, Integer>();
 
@@ -147,13 +155,8 @@ public with sharing class ddFieldList {
     }
 
 
-    public String save() {
-        try {
-            upsert this.fieldList;
-            return 'success';
-        } catch (Exception ex) {
-            return ex.getMessage();
-        }
+    public void save() {
+        update this.fieldList;
     }
 
 

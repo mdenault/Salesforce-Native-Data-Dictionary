@@ -1,7 +1,7 @@
 public with sharing class ddCoreService {
 
     public static final String OBJECT_STATUS_STUB = 'Stub';
-    public static final String OBJECT_STATUS_DRAFT = 'Projected';
+    public static final String OBJECT_STATUS_DRAFT = 'Draft';
     public static final String OBJECT_STATUS_ACTIVE = 'Active';
     public static final String OBJECT_STATUS_DELETED = 'Deleted';
 

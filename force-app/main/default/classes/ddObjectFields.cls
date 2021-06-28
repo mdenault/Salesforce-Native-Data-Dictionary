@@ -18,7 +18,6 @@ public with sharing class ddObjectFields {
     }
 
     public void setObjectId(Id idVal) {
-        // TODO: validate idVal
         this.ddo.Id = idVal;
     }
 
@@ -119,7 +118,7 @@ public with sharing class ddObjectFields {
                                 fieldSections.put(item.field, new List<String>());
                             }
                             List<String> tempList = fieldSections.get(item.field);
-                            tempList.add(layoutMd.FullName.substringAfter('-') + System.Label.Data_Dictionary_Layout_Section_Seperator + sectionName);
+                            tempList.add(layoutMd.FullName.substringAfter('-') + ' ' + System.Label.Data_Dictionary_Layout_Section_Seperator + ' ' + sectionName);
                             fieldSections.put(item.field, tempList);
                         }
                     }
@@ -232,32 +231,34 @@ public with sharing class ddObjectFields {
             ddfItem.Profiles_Read__c = '';
             ddfItem.Profiles_Edit__c = '';
 
-            if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
-                ddfItem.Permission_Set_Groups_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap'), '\n'), pMax);
-            }
+            if (ddfItem.Status__c == ddCoreService.FIELD_STATUS_ACTIVE) {
+                if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
+                    ddfItem.Permission_Set_Groups_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap'), '\n'), pMax);
+                }
 
-            if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
-                ddfItem.Permission_Set_Groups_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsEditMap'), '\n'), pMax);
-            }
+                if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
+                    ddfItem.Permission_Set_Groups_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsEditMap'), '\n'), pMax);
+                }
 
-            if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
-                ddfItem.Permission_Sets_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n'), pMax);
-            }
+                if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
+                    ddfItem.Permission_Sets_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n'), pMax);
+                }
 
-            if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
-                ddfItem.Permission_Sets_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n'), pMax);
-            }
+                if (permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap').size() > 0) {
+                    ddfItem.Permission_Sets_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermsReadMap'), '\n'), pMax);
+                }
 
-            if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
-                ddfItem.Profiles_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n'), pMax);
-            }
-            
-            if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
-                ddfItem.Profiles_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n'), pMax);
-            }
+                if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
+                    ddfItem.Profiles_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n'), pMax);
+                }
+                
+                if (permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap').size() > 0) {
+                    ddfItem.Profiles_Edit__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldProfilesReadMap'), '\n'), pMax);
+                }
 
-            // Again, remove not-longer needed values to reduce heap usage
-            permMap.remove(ddfItem.API_Name__c);
+                // Again, remove not-longer needed values to reduce heap usage
+                permMap.remove(ddfItem.API_Name__c);
+            }
         }
     }
 
@@ -353,7 +354,7 @@ public with sharing class ddObjectFields {
                 // Dependent picklists
                 if (fieldDescribe.isDependentPicklist()) {
                     ddfItem.Is_Dependent_Picklist__c = true;
-                    // TODO: more here
+                    // TODO: more here?
                 } else {
                     ddfItem.Is_Dependent_Picklist__c = false;
                 }
@@ -389,14 +390,33 @@ public with sharing class ddObjectFields {
     }
 
     public void fillFromFieldDefs() {
-        this.SetFieldDefs();
+        this.setFieldDefs();
+
+        // This is a list of the fields that we saw as active in the last run. If any of them are left over
+        // after this pass, that means they were deleted.
+        List<String> unprocessedDurIds = new List<String>();
+        for (Data_Dictionary_Field__c ddf : this.fields) {
+            if (ddf.Durable_ID__c != null && ddf.Status__c == ddCoreService.FIELD_STATUS_ACTIVE) {
+                unprocessedDurIds.add(ddf.Durable_ID__c);
+            }
+        }
 
         for (FieldDefinition fd : this.fieldDefs) {
+            Boolean wasDraft = false;
             Data_Dictionary_Field__c ddfItem = new Data_Dictionary_Field__c();
 
             for (Data_Dictionary_Field__c ddf : this.fields) {
-                if (fd.DurableId.equals(ddf.Durable_ID__c)) {
+                // Either we match active fields, or we have a field that was previously draft or deleted that has been (re)created
+                if (fd.DurableId.equals(ddf.Durable_ID__c) || fd.QualifiedApiName == ddf.API_Name__c) {
                     ddfItem = this.fields.get(this.fields.indexOf(ddf));
+                    // We found this field, so remove it from our unprocessed list if we can
+                    Integer unprocIndex = unprocessedDurIds.indexOf(fd.DurableId);
+                    if (unprocIndex >= 0) {
+                        unprocessedDurIds.remove(unprocIndex);
+                    } else if (ddf.Status__c == ddCoreService.FIELD_STATUS_DRAFT) {
+                        wasDraft = true;
+                    }
+                    // And then exit the loop
                     break;
                 }
             }
@@ -429,23 +449,34 @@ public with sharing class ddObjectFields {
             // DurableID
             ddfItem.Durable_ID__c = fd.DurableId;
 
+            // Last modified
             ddfItem.Metadata_Last_Modified_by__c = fd.LastModifiedById;
             ddfItem.Metadata_Last_Modified_Date__c = fd.LastModifiedDate;
 
             Datetime curDateTime = Datetime.now();
 
-            if (ddfItem.Id != null) {
+            if (ddfItem.Id != null && wasDraft == false) {
                 ddfItem.Last_Processed__c = curDateTime;
             } else {
                 ddfItem.Object__c = this.ddo.Id;
                 ddfItem.First_Sync__c = curDateTime;
                 this.newList.add(ddfItem.API_Name__c);
 
-                this.fields.add(ddfItem);
+                if (wasDraft == false) {
+                    this.fields.add(ddfItem);
+                }
             }
         }
 
-        // TODO: if there are fields that were not processed, they must have been deleted or are still draft
+        // If there are fields that were not processed, they may have been deleted (or they are still draft)
+        for (String durId : unprocessedDurIds) {
+            for (Data_Dictionary_Field__c ddf : this.fields) {
+                if (durId == ddf.Durable_ID__c && ddf.Status__c == ddCoreService.FIELD_STATUS_ACTIVE) {
+                    ddf.Status__c = ddCoreService.FIELD_STATUS_DELETED;
+                    ddf.Last_Processed__c = Datetime.now();
+                }
+            }
+        }
     }
 
 
