@@ -36,12 +36,13 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
     public void execute(Database.BatchableContext bc, List<Data_Dictionary_Object__c> records) {
         for (Data_Dictionary_Object__c ddo : records) {
             System.debug('Starting processing of fields for ' + ddo.API_Name__c);
+            System.debug('Status is ' + ddo.Status__c);
             System.debug('this.mode = ' + this.mode);
 
             ddObjectFields ddf = new ddObjectFields();
-            ddf.SetObjectId(ddo.Id);
-            ddf.SetObjectDurableId(ddo.Durable_ID__c);
-            ddf.SetObjectAPIName(ddo.API_Name__c);
+            ddf.setObjectId(ddo.Id);
+            ddf.setObjectDurableId(ddo.Durable_ID__c);
+            ddf.setObjectAPIName(ddo.API_Name__c);
             if (this.mode == 'only-basics') {
                 ddf.fillFromDDFs();
                 ddf.fillFromFieldDefs();

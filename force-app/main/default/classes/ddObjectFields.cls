@@ -70,8 +70,6 @@ public with sharing class ddObjectFields {
                 'q=' + EncodingUtil.urlEncode('SELECT DeveloperName, CreatedDate, CreatedById FROM CustomField WHERE DeveloperName IN ' + fieldList + ' AND TableEnumOrId = \'' + this.ddo.Durable_ID__c + '\'', 'UTF-8'),
                 'GET', ddCoreService.GetUserSessionId());
 
-            System.debug(body);
-
             Map<String, Object> responseMap = (Map<String, Object>)JSON.deserializeUntyped(body);
             data = (List<Object>)responseMap.get('records');
         }
@@ -231,7 +229,7 @@ public with sharing class ddObjectFields {
             ddfItem.Profiles_Read__c = '';
             ddfItem.Profiles_Edit__c = '';
 
-            if (ddfItem.Status__c == ddCoreService.FIELD_STATUS_ACTIVE) {
+            if (1 == 1) { // (ddfItem.Status__c == ddCoreService.FIELD_STATUS_ACTIVE) {
                 if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
                     ddfItem.Permission_Set_Groups_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap'), '\n'), pMax);
                 }
@@ -307,6 +305,10 @@ public with sharing class ddObjectFields {
         }
     }
 
+    public Boolean fieldIsRequired(Schema.DescribeFieldResult field) {
+        return (field.isCreateable() && field.isDefaultedOnCreate() == false && field.isNillable() == false);
+    }
+
     public void fillFromDescribe() {
         List<Schema.DescribeSobjectResult> results = Schema.describeSObjects(new List<String>{this.ddo.API_Name__c});
         Map<String, Schema.SObjectField> fieldDescMap = results[0].fields.getMap();
@@ -322,6 +324,9 @@ public with sharing class ddObjectFields {
                 } else {
                     ddfItem.Field_ID__c = '';
                 }
+
+                // Required
+                ddfItem.Is_Required__c = fieldIsRequired(fieldDescribe);
 
                 // Uniqueness
                 if (fieldDescribe.isUnique()) {
