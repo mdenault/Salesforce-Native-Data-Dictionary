@@ -306,7 +306,7 @@ public with sharing class ddObjectFields {
     }
 
     public Boolean fieldIsRequired(Schema.DescribeFieldResult field) {
-        return (field.isCreateable() && field.isDefaultedOnCreate() == false && field.isNillable() == false);
+        return ((field.isCreateable() == true && field.isDefaultedOnCreate() == false && field.isNillable() == false) || (field.isNameField() == true && field.isAutoNumber() == false));
     }
 
     public void fillFromDescribe() {

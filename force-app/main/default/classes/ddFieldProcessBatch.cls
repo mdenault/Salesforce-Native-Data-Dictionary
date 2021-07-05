@@ -74,12 +74,6 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
                 Database.executeBatch(newBatch, 1);
             }
 
-            // TODO: determine if we fire off this batch, and the appropriate batch size, based on metadata
-            // } else {
-            // ddFieldDetailsBatch ddfb = new ddFieldDetailsBatch();
-            // Database.executeBatch(ddfb, 10);
-            // }
-
         }
     }
 

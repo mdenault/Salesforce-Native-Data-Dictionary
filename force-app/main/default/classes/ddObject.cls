@@ -127,7 +127,7 @@ public inherited sharing class ddObject {
         if (ed == null) {
             if (ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
                 ddo.Status__c = ddCoreService.OBJECT_STATUS_DELETED;
-                // TODO: clear other fields?
+                // TODO: clear other fields, like permissions?
             }
         } else {
             // Sync times
