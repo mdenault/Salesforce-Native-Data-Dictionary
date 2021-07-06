@@ -500,7 +500,7 @@ public with sharing class ddObjectFields {
                         picks.add(pick.label);
                     }
                     s += String.join(picks, ', ');
-                    s += '}';
+                    s += '}\n';
                 }
                 ddf.Picklist_Values_Dependencies__c = ddCoreService.longString(s, 30000);
             }
