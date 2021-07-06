@@ -489,16 +489,20 @@ public with sharing class ddObjectFields {
 
         for (Data_Dictionary_Field__c ddf : this.fields) {
             ddf.Picklist_Values_Dependencies__c = '';
+            String s = '';
             if (ddf.Is_Dependent_Picklist__c == true) {
                 Schema.DescribeFieldResult fieldDescribe = fieldDescMap.get(ddf.API_Name__c.toLowerCase()).getDescribe();
                 Map<Object, List<Schema.PicklistEntry>> pickMap = getDependentPicklistValues(fieldDescribe);
                 for (Object labelObj : pickMap.keySet()) {
-                    ddf.Picklist_Values_Dependencies__c += String.valueOf(labelObj) + ' = {';
+                    s += String.valueOf(labelObj) + ' = {';
+                    List<String> picks = new List<String>();
                     for (Schema.PicklistEntry pick : pickMap.get(labelObj)) {
-                        ddf.Picklist_Values_Dependencies__c += pick.label + '\n';
+                        picks.add(pick.label);
                     }
-                    ddf.Picklist_Values_Dependencies__c += '}';
+                    s += String.join(picks, ', ');
+                    s += '}';
                 }
+                ddf.Picklist_Values_Dependencies__c = ddCoreService.longString(s, 30000);
             }
         }
     }
