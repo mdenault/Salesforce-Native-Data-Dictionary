@@ -330,8 +330,6 @@ public inherited sharing class ddObject {
         this.ddo.Permission_Set_Groups_View_All__c = ddCoreService.longString(objPermGroupsModAll, pMax);
         this.ddo.Permission_Set_Groups_Modify_All__c = ddCoreService.longString(objPermGroupsViewAll, pMax);
 
-        pMax = 10000;
-
         this.ddo.Profiles_Create__c = ddCoreService.longString(objProfilesCreate, pMax);
         this.ddo.Profiles_Read__c = ddCoreService.longString(objProfilesRead, pMax);
         this.ddo.Profiles_Edit__c = ddCoreService.longString(objProfilesEdit, pMax);

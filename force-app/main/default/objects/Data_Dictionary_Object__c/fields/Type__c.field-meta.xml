@@ -41,6 +41,11 @@
                 <default>false</default>
                 <label>Platform Event</label>
             </value>
+            <value>
+                <fullName>External Object</fullName>
+                <default>false</default>
+                <label>External Object</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

@@ -227,7 +227,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Data_Dictionary_Field__c.Picklist_Values_Dependencies__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Data_Dictionary_Field__c.Picklist_Values_Simple__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Data_Dictionary_Field__c.Picklist_Values_by_Record_Type__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -273,11 +283,6 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Data_Dictionary_Field__c.Value_Formula__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Data_Dictionary_Object__c.API_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
