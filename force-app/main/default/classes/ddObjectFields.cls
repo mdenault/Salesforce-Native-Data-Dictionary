@@ -352,7 +352,7 @@ public with sharing class ddObjectFields {
                             pickField += pick.getLabel() + '\n';
                         }
                     }
-                    //ddfItem.Picklist_Values_Simple__c = ddCoreService.longString(pickField, 20000);
+                    ddfItem.Picklist_Values_Simple__c = ddCoreService.longString(pickField, 20000);
                     ddfItem.Picklist_Values_All__c = ddCoreService.longString(JSON.serializePretty(picks), 40000);
                 }
 
