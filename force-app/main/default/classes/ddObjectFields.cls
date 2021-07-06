@@ -532,9 +532,9 @@ public with sharing class ddObjectFields {
                     if (bitIndex > base64chars.size() - 1) {
                         break;
                     }
-                    Integer bitShift = 5 - Math.mod( index, 6 );
+                    Integer bitShift = 5 - Math.mod(index, 6);
 
-                    if (controlValue == null || (base64map.indexOf( base64chars[ bitIndex ] ) & (1 << bitShift)) == 0) {
+                    if (controlValue == null || (base64map.indexOf(base64chars[bitIndex]) & (1 << bitShift)) == 0) {
                         continue;
                     }
                     if (!dependentPicklistValues.containsKey(controlValue)) {

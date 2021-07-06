@@ -1,8 +1,6 @@
 @IsTest
 public with sharing class ddObjectFieldTests {
 
-
-
     @IsTest
     public static void testBatchCustomObjectFieldBasics() {
         ddObjectProcess ddop = new ddObjectProcess();
@@ -28,7 +26,6 @@ public with sharing class ddObjectFieldTests {
 
 
     }
-
 
     @IsTest
     public static void testBatchCustomObjectFieldActiveBasics() {
@@ -73,7 +70,7 @@ public with sharing class ddObjectFieldTests {
         */
 
         Test.startTest();
-        ddFieldProcessBatch ddfp = new ddFieldProcessBatch(ddo.Durable_ID__c, 'only-basics');
+        ddFieldProcessBatch ddfp = new ddFieldProcessBatch();
         Database.executeBatch(ddfp, 1);
         Test.stopTest();
 
@@ -212,11 +209,43 @@ public with sharing class ddObjectFieldTests {
         List<Data_Dictionary_Field__c> fieldList = [SELECT Id, API_Name__c FROM Data_Dictionary_Field__c where Object__c = :ddo.Id];
 
         Test.startTest();
-        ddFieldProcessBatch ddfp = new ddFieldProcessBatch(ddo.Durable_ID__c, 'only-dependent-picklists');
+        ddFieldProcessBatch ddfp = new ddFieldProcessBatch('only-dependent-picklists');
         Database.executeBatch(ddfp, 1);
         Test.stopTest();
 
         // TODO: asserts!
     }
+
+    @IsTest
+    public static void testBatchCustomObjectFieldTrigger() {
+        ddObjectProcess ddop = new ddObjectProcess();
+        ddop.execute();
+
+        Data_Dictionary_Object__c ddo = [SELECT Id, Durable_ID__c FROM Data_Dictionary_Object__c WHERE API_Name__c = 'Data_Dictionary_Field__c' LIMIT 1];
+
+        List<FieldDefinition> fieldDefinitions = [
+            SELECT Id, DurableId, QualifiedApiName
+            FROM FieldDefinition
+            WHERE EntityDefinition.DurableId = :ddo.Durable_ID__c
+            AND QualifiedApiName = 'Description__c'
+        ];
+
+        Test.setMock(HttpCalloutMock.class, new ddHttpMockResponse('object-fields', fieldDefinitions[0].DurableId));
+
+        Test.startTest();
+        ddFieldProcessBatch ddfp = new ddFieldProcessBatch(ddo.Durable_ID__c, 'only-basics');
+        Database.executeBatch(ddfp, 1);
+        Test.stopTest();
+
+        Data_Dictionary_Field__c ddf = [SELECT Id, Description__c FROM Data_Dictionary_Field__c WHERE Durable_ID__c = :fieldDefinitions[0].DurableId LIMIT 1];
+        ddf.Description__c = 'New description for testing';
+        update ddf;
+
+        ddf = [SELECT Id, Description__c FROM Data_Dictionary_Field__c WHERE Durable_ID__c = :fieldDefinitions[0].DurableId LIMIT 1];
+        // Assertions
+
+
+    }
+
 
 }
