@@ -78,6 +78,37 @@ public with sharing class ddObjectTests {
     }
 
     @IsTest
+    public static void testDraftObject() {
+        Data_Dictionary_Object__c ddo = new Data_Dictionary_Object__c();
+        ddo.API_Name__c = 'Data_Dictionary_Object__c';
+        ddo.Name = 'Data Dictionary Object';
+        // ddo.Type__c = ddCoreService.OBJECT_TYPE_CUSTOMOBJECT;
+        ddo.Status__c = ddCoreService.OBJECT_STATUS_DRAFT;
+
+        insert ddo;
+
+        ddObjectProcess ddop = new ddObjectProcess();
+        ddop.execute();
+
+        List<Data_Dictionary_Object__c> ddos = [SELECT Id, Durable_ID__c, Type__c, Status__c FROM Data_Dictionary_Object__c WHERE API_Name__c = 'Data_Dictionary_Object__c'];
+
+        Test.setMock(HttpCalloutMock.class, new ddHttpMockResponse('object', ddos[0].Durable_ID__c));
+
+        Test.startTest();
+        ddObjectProcessBatch ddob = new ddObjectProcessBatch(ddos[0].Durable_ID__c);
+        Database.executeBatch(ddob, 1);
+        Test.stopTest();
+
+        // Assertions
+        ddos = [SELECT Id, Durable_ID__c, Type__c, Status__c FROM Data_Dictionary_Object__c WHERE API_Name__c = 'Data_Dictionary_Object__c'];
+
+        System.assertEquals(1, ddos.size());
+        System.assertEquals(ddCoreService.OBJECT_TYPE_CUSTOMOBJECT, ddos[0].Type__c);
+        System.assertEquals(ddCoreService.OBJECT_STATUS_ACTIVE, ddos[0].Status__c);
+    }
+
+
+    @IsTest
     public static void testObjectChangeLogCreation() {
         ddObjectProcess ddop = new ddObjectProcess();
         ddop.execute();

@@ -6,7 +6,7 @@ trigger ddFieldTrigger on Data_Dictionary_Field__c (after update) {
     excludeFieldNames = ddCoreService.lowercaseList(excludeFieldNames);
 
     // TODO: probably more fields to add here
-    List<String> nativeFieldNames = new List<String>{'page_layouts__c', 'permission_set_groups_edit__c', 'permission_set_groups_read__c', 'permission_sets_edit__c', 'permission_sets_read__c', 'profiles_edit__c', 'profiles_read__c'};
+    List<String> nativeFieldNames = new List<String>{'page_layouts__c', 'permission_set_groups_edit__c', 'permission_set_groups_read__c', 'permission_sets_edit__c', 'permission_sets_read__c', 'profiles_edit__c', 'profiles_read__c', 'picklist_values_dependencies__c'};
 
     Map<String, Schema.SObjectField> fieldsMap = Schema.SObjectType.Data_Dictionary_Field__c.fields.getMap();
     Set <String> fieldNames = fieldsMap.keySet();

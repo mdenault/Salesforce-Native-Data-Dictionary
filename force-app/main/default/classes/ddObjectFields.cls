@@ -32,7 +32,7 @@ public with sharing class ddObjectFields {
     public void fillFromDDFs() {
         // Get the Data Dictionary data
         List<Data_Dictionary_Field__c> ddfList = [
-            SELECT Id, Status__c, Durable_ID__c, Name, API_Name__c, Field_ID__c, Last_Processed__c, Help_Text__c, Description__c
+            SELECT Id, Status__c, Durable_ID__c, Name, API_Name__c, Field_ID__c, Last_Processed__c, Help_Text__c, Description__c, Is_Dependent_Picklist__c
             FROM Data_Dictionary_Field__c
             WHERE Object__c = :this.ddo.Id
         ];
@@ -229,7 +229,7 @@ public with sharing class ddObjectFields {
             ddfItem.Profiles_Read__c = '';
             ddfItem.Profiles_Edit__c = '';
 
-            if (1 == 1) { // (ddfItem.Status__c == ddCoreService.FIELD_STATUS_ACTIVE) {
+            if (ddfItem.Status__c == ddCoreService.FIELD_STATUS_ACTIVE && permMap.containsKey(ddfItem.API_Name__c)) {
                 if (permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap').size() > 0) {
                     ddfItem.Permission_Set_Groups_Read__c = ddCoreService.longString(String.join(permMap.get(ddfItem.API_Name__c).get('fieldPermGroupsReadMap'), '\n'), pMax);
                 }
@@ -484,6 +484,74 @@ public with sharing class ddObjectFields {
         }
     }
 
+    public void fillDependentPicklists() {
+        List<Schema.DescribeSobjectResult> results = Schema.describeSObjects(new List<String>{this.ddo.API_Name__c});
+        Map<String, Schema.SObjectField> fieldDescMap = results[0].fields.getMap();
+
+        for (Data_Dictionary_Field__c ddf : this.fields) {
+            ddf.Picklist_Values_Dependencies__c = '';
+            if (ddf.Is_Dependent_Picklist__c == true) {
+                Schema.DescribeFieldResult fieldDescribe = fieldDescMap.get(ddf.API_Name__c.toLowerCase()).getDescribe();
+                Map<Object, List<Schema.PicklistEntry>> pickMap = getDependentPicklistValues(fieldDescribe);
+                for (Object labelObj : pickMap.keySet()) {
+                    ddf.Picklist_Values_Dependencies__c += String.valueOf(labelObj) + ' = {';
+                    for (Schema.PicklistEntry pick : pickMap.get(labelObj)) {
+                        ddf.Picklist_Values_Dependencies__c += pick.label + '\n';
+                    }
+                    ddf.Picklist_Values_Dependencies__c += '}';
+                }
+            }
+        }
+    }
+
+    /**
+    * @description Logic taken from https://glyntalkssalesforce.blogspot.com/2018/08/dependent-picklist-values-in-apex.html and
+    * https://salesforce.stackexchange.com/questions/4462/get-lists-of-dependent-picklist-options-in-apex
+    * @param Schema.DescribeFieldResult depend 
+    * @return Map<Object, List<Schema.PicklistEntry>> 
+    **/
+    public static Map<Object, List<Schema.PicklistEntry>> getDependentPicklistValues(Schema.DescribeFieldResult depend) {
+        Schema.sObjectField controlToken = depend.getController();
+        if (controlToken == null) {
+            return null;
+        }
+
+        Schema.DescribeFieldResult control = controlToken.getDescribe();
+        List<Schema.PicklistEntry> controlEntries = (control.getType() == Schema.DisplayType.Boolean ? null : control.getPicklistValues());
+     
+        String base64map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+        Map<Object, List<Schema.PicklistEntry>> dependentPicklistValues = new Map<Object, List<Schema.PicklistEntry>>();
+        for (Schema.PicklistEntry entry : depend.getPicklistValues()) {
+            if (entry.isActive()) {
+                List<String> base64chars = String.valueOf(((Map<String,Object>) JSON.deserializeUntyped(JSON.serialize(entry))).get('validFor')).split('');
+                for (Integer index = 0; index < (controlEntries != null ? controlEntries.size() : 2); index++) {
+                    Object controlValue = (controlEntries == null ? (Object) (index == 1) : (Object) (controlEntries[index].isActive() ? controlEntries[index].getLabel() : null));
+
+                    // Integer bitIndex = index / 6, bitShift = 5 - Math.mod( index, 6 );
+                    Integer bitIndex = index / 6;
+                    if (bitIndex > base64chars.size() - 1) {
+                        break;
+                    }
+                    Integer bitShift = 5 - Math.mod( index, 6 );
+
+                    if (controlValue == null || (base64map.indexOf( base64chars[ bitIndex ] ) & (1 << bitShift)) == 0) {
+                        continue;
+                    }
+                    if (!dependentPicklistValues.containsKey(controlValue)) {
+                        dependentPicklistValues.put(controlValue, new List<Schema.PicklistEntry>());
+                    }
+                    dependentPicklistValues.get(controlValue).add(entry);
+                }
+            }
+        }
+        return dependentPicklistValues;
+    }
+
+
+    public void fillPicklistValsByRecordType() {
+
+
+    }
 
     public void save() {
         upsert this.fields;

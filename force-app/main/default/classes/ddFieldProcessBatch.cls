@@ -58,6 +58,9 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
             } else if (this.mode == 'only-permissions' && ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
                 ddf.fillFromDDFs();
                 ddf.fillPermissions();
+            } else if (this.mode == 'only-dependent-picklists' && ddo.Status__c == ddCoreService.OBJECT_STATUS_ACTIVE) {
+                ddf.fillFromDDFs();
+                ddf.fillDependentPicklists();
             }
 
             ddf.save();
@@ -71,6 +74,9 @@ public with sharing class ddFieldProcessBatch implements Database.Batchable<SObj
                 Database.executeBatch(newBatch, 1);
             } else if (this.mode == 'only-page-layouts') {
                 ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectDurableId, 'only-permissions');
+                Database.executeBatch(newBatch, 1);
+            } else if (this.mode == 'only-permissions') {
+                ddFieldProcessBatch newBatch = new ddFieldProcessBatch(this.objectDurableId, 'only-dependent-picklists');
                 Database.executeBatch(newBatch, 1);
             }
 
