@@ -116,7 +116,7 @@ public with sharing class ddObjectFields {
                                 fieldSections.put(item.field, new List<String>());
                             }
                             List<String> tempList = fieldSections.get(item.field);
-                            tempList.add(layoutMd.FullName.substringAfter('-') + System.Label.Data_Dictionary_Layout_Section_Seperator + sectionName);
+                            tempList.add(layoutMd.FullName.substringAfter('-') + ' ' + System.Label.Data_Dictionary_Layout_Section_Seperator + ' ' + sectionName);
                             fieldSections.put(item.field, tempList);
                         }
                     }
