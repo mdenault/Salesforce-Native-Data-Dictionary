@@ -116,7 +116,7 @@ public with sharing class ddObjectFields {
                                 fieldSections.put(item.field, new List<String>());
                             }
                             List<String> tempList = fieldSections.get(item.field);
-                            tempList.add(layoutMd.FullName.substringAfter('-') + ' ' + System.Label.Data_Dictionary_Layout_Section_Seperator + ' ' + sectionName);
+                            tempList.add(layoutMd.FullName.substringAfter('-') + System.Label.Data_Dictionary_Layout_Section_Seperator + sectionName);
                             fieldSections.put(item.field, tempList);
                         }
                     }
@@ -352,14 +352,13 @@ public with sharing class ddObjectFields {
                             pickField += pick.getLabel() + '\n';
                         }
                     }
-                    ddfItem.Picklist_Values_Simple__c = ddCoreService.longString(pickField, 20000);
+                    //ddfItem.Picklist_Values_Simple__c = ddCoreService.longString(pickField, 20000);
                     ddfItem.Picklist_Values_All__c = ddCoreService.longString(JSON.serializePretty(picks), 40000);
                 }
 
                 // Dependent picklists
                 if (fieldDescribe.isDependentPicklist()) {
                     ddfItem.Is_Dependent_Picklist__c = true;
-                    // TODO: more here?
                 } else {
                     ddfItem.Is_Dependent_Picklist__c = false;
                 }

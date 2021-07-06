@@ -23,7 +23,8 @@
         <value xsi:type="xsd:string">LastModifiedDate
 SystemModstamp
 Last_Processed__c
-Data_Owner_Group_Name__c</value>
+Data_Owner_Group_Name__c
+Header__c</value>
     </values>
     <values>
         <field>DDO_Fields_Exclude_from_Log__c</field>
@@ -48,15 +49,19 @@ SetupOwnerId</value>
     <values>
         <field>Standard_Objects_to_Include__c</field>
         <value xsi:type="xsd:string">Account
+Activity
+Asset
 Campaign
 CampaignMember
 Case
 Contact
 Contract
+Lead
 Opportunity
+OpportunityContactRole
 OpportunityLineItem
-OpportunityProduct
-Product2</value>
+Product2
+User</value>
     </values>
     <values>
         <field>Tooling_API_Version__c</field>
