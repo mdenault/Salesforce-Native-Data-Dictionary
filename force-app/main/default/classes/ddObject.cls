@@ -161,8 +161,9 @@ public inherited sharing class ddObject {
 
     public void fillFromEntityDef() {
         // Get any EntityDefinition data
+        // TODO: Figure out DeploymentStatus
         List<EntityDefinition> entityData = [
-            SELECT DeploymentStatus, DeveloperName, DurableId, QualifiedApiName, IsCustomSetting, KeyPrefix, Label, LastModifiedById, LastModifiedDate, NamespacePrefix, PluralLabel, ExternalSharingModel, InternalSharingModel
+            SELECT DeveloperName, DurableId, QualifiedApiName, IsCustomSetting, KeyPrefix, Label, LastModifiedById, LastModifiedDate, NamespacePrefix, PluralLabel, ExternalSharingModel, InternalSharingModel
             FROM EntityDefinition
             WHERE DurableId = :this.ddo.Durable_ID__c
         ];
