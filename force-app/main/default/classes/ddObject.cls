@@ -321,15 +321,15 @@ public inherited sharing class ddObject {
         this.ddo.Permission_Sets_Read__c = ddCoreService.longString(objPermsRead, pMax);
         this.ddo.Permission_Sets_Edit__c = ddCoreService.longString(objPermsEdit, pMax);
         this.ddo.Permission_Sets_Delete__c = ddCoreService.longString(objPermsDelete, pMax);
-        this.ddo.Permission_Sets_View_All__c = ddCoreService.longString(objPermsModAll, pMax);
-        this.ddo.Permission_Sets_Modify_All__c = ddCoreService.longString(objPermsViewAll, pMax);
+        this.ddo.Permission_Sets_View_All__c = ddCoreService.longString(objPermsViewAll, pMax);
+        this.ddo.Permission_Sets_Modify_All__c = ddCoreService.longString(objPermsModAll, pMax);
 
         this.ddo.Permission_Set_Groups_Create__c = ddCoreService.longString(objPermGroupsCreate, pMax);
         this.ddo.Permission_Set_Groups_Read__c = ddCoreService.longString(objPermGroupsRead, pMax);
         this.ddo.Permission_Set_Groups_Edit__c = ddCoreService.longString(objPermGroupsEdit, pMax);
         this.ddo.Permission_Set_Groups_Delete__c = ddCoreService.longString(objPermGroupsDelete, pMax);
-        this.ddo.Permission_Set_Groups_View_All__c = ddCoreService.longString(objPermGroupsModAll, pMax);
-        this.ddo.Permission_Set_Groups_Modify_All__c = ddCoreService.longString(objPermGroupsViewAll, pMax);
+        this.ddo.Permission_Set_Groups_View_All__c = ddCoreService.longString(objPermGroupsViewAll, pMax);
+        this.ddo.Permission_Set_Groups_Modify_All__c = ddCoreService.longString(objPermGroupsModAll, pMax);
 
         this.ddo.Profiles_Create__c = ddCoreService.longString(objProfilesCreate, pMax);
         this.ddo.Profiles_Read__c = ddCoreService.longString(objProfilesRead, pMax);
