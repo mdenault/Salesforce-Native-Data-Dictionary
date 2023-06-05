@@ -121,8 +121,15 @@ public with sharing class ddCoreService {
         List<Metadata.Metadata> pageLayouts = new List<Metadata.Metadata>();
         List<String> layoutNames = getPageLayoutNameListForObject(ddoDurableId, layoutPrefix, true);
 
-        if (layoutNames.size() > 0) {
-            pageLayouts = Metadata.Operations.retrieve(Metadata.MetadataType.Layout, layoutNames);
+        Integer layoutCount = layoutNames.size();
+        if (layoutCount > 0) {
+            // Can't submit more than 10 entities in a metadata retrieve operation, and can't make more
+            // than 10 requests in a transaction.
+            List<List<Object>> nameLists = listSplit(layoutNames, 10);
+            for (List<Object> objs : nameLists) {
+                List<String> nameList = convertObjectListToStrings(objs);
+                pageLayouts.addAll(Metadata.Operations.retrieve(Metadata.MetadataType.Layout, nameList));
+            }
         }
 
         return pageLayouts;
@@ -144,6 +151,43 @@ public with sharing class ddCoreService {
             returnList.add(s.toLowerCase());
         }
         return returnList;
+    }
+
+    // Credit Shanerk at https://salesforce.stackexchange.com/questions/236478/apex-break-list-into-multiple-small-lists-before-processing
+    public static List<List<Object>> listSplit(List<Object> source, Integer size) {
+        List<List<Object>> ret = new List<List<Object>>();
+        if (source == null) return ret;
+    
+        // If the source size is equal to or smaller than our partition size, just return it
+        if (source.size() <= size) {
+            ret.add(source);
+            return ret;
+        }
+    
+        // Initialize the partitions
+        Integer partition = 0;
+        ret.add(new List<Object>());
+    
+        for (Object obj : source) {
+            // Create a new partition if we've already filled up the last one
+            if (ret[partition].size() == size) {
+                partition++;
+                ret.add(new List<Object>());
+            }
+            // Add object to current partition
+            ret[partition].add(obj);
+        }
+    
+        return ret;
+    }
+
+    public static List<String> convertObjectListToStrings(List<Object> source) {
+        List<String> ret = new List<String>();
+        for (Object obj : source) {
+            ret.add(String.valueOf(obj));
+        }
+
+        return ret;
     }
 
     public static Data_Dictionary_Setting__mdt getActiveSettings() {
