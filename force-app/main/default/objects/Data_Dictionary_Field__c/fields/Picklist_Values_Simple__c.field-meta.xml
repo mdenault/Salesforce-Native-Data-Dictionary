@@ -4,7 +4,7 @@
     <externalId>false</externalId>
     <inlineHelpText>A simple list of all active picklist values for the field. Note that if this object uses record types, or if this field is part of a dependent picklist pairing, then not all values may be visible at all times. It is also possible that other, deactivated values may be present in records, especially if the picklist is unrestricted.</inlineHelpText>
     <label>Picklist Values (Active)</label>
-    <length>5000</length>
+    <length>10000</length>
     <trackHistory>true</trackHistory>
     <trackTrending>false</trackTrending>
     <type>LongTextArea</type>
